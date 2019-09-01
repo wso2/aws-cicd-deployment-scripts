@@ -753,40 +753,6 @@ Resources:
       Tags:
         - Key: Name
           Value: is
-  WSO2ISServicesALBTargetGroupProd:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 4
-      HealthCheckPath: /
-      HealthCheckPort: 8280
-      Matcher:
-        HttpCode: 200
-      Name: is-carbon-prod-8280
-      Port: 8280
-      Protocol: HTTP
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: '20'
-        - Key: stickiness.enabled
-          Value: 'true'
-      UnhealthyThresholdCount: 3
-      VpcId:
-        Ref: WSO2ISVPC
-      Tags:
-        - Key: Name
-          Value: is
-  WSO2ISServicesALBListenerProd:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref WSO2ISServicesALBTargetGroupProd
-      LoadBalancerArn: !Ref WSO2ISLoadBalancerProd
-      Port: 8280
-      Protocol: HTTP
   WSO2ISALBListenerProd:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:

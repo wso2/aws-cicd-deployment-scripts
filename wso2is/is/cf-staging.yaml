@@ -675,40 +675,6 @@ Resources:
       Tags:
         - Key: Name
           Value: is
-  WSO2ISServicesALBTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 4
-      HealthCheckPath: /
-      HealthCheckPort: 8280
-      Matcher:
-        HttpCode: 200
-      Name: is-carbon-staging-8280
-      Port: 8280
-      Protocol: HTTP
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: '20'
-        - Key: stickiness.enabled
-          Value: 'true'
-      UnhealthyThresholdCount: 3
-      VpcId:
-        Ref: WSO2ISVPC
-      Tags:
-        - Key: Name
-          Value: is
-  WSO2ISServicesALBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref WSO2ISServicesALBTargetGroup
-      LoadBalancerArn: !Ref WSO2ISLoadBalancer
-      Port: 8280
-      Protocol: HTTP
   WSO2ISALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:

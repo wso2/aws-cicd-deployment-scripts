@@ -386,7 +386,7 @@ Resources:
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/APIM_ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2DBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
@@ -500,7 +500,7 @@ Resources:
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/APIM_ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2DBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
@@ -918,16 +918,9 @@ Parameters:
   Environment:
     Type: String
 Mappings:
-  WSO2MonitorMasterAMIRegionMap:
-    us-east-1:
-      Ubuntu1804: ami-0f9800322e816f39e
-    us-east-2:
-      Ubuntu1804: ami-0d8a95ba424b52885
-    us-west-1:
-      Ubuntu1804: ami-0b1a16521c4b5dee8
   WSO2LoggingMasterAMIRegionMap:
     us-east-1:
-      Ubuntu1804: ami-0820cde1afa9bdc7a
+      Ubuntu1804: ami-089c43fe12d048b25
     us-east-2:
       Ubuntu1804: ami-0b382084a3cc80fb7
     us-west-1:
