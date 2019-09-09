@@ -330,6 +330,10 @@ Resources:
           ToPort: '5672'
           SourceSecurityGroupId: !Ref WSO2EILoadBalancerSecurityGroupProd
         - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: '4100'
           ToPort: '4100'
           CidrIp: 0.0.0.0/0
@@ -661,6 +665,10 @@ Resources:
           FromPort: '8080'
           ToPort: '8080'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: '9763'
@@ -689,6 +697,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '8080'
           ToPort: '8080'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
           CidrIp: 0.0.0.0/0
   WSO2EILoadBalancerProd:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
