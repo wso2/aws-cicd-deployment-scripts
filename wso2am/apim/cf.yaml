@@ -321,6 +321,7 @@ Resources:
     Properties:
       VpcId: !Ref WSO2APIMVPC
       GroupDescription: WSO2 API Manager Security Group
+      GroupName: WSO2SecurityGroup
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -366,6 +367,10 @@ Resources:
           FromPort: '5672'
           ToPort: '5672'
           SourceSecurityGroupId: !Ref WSO2APIMLoadBalancerSecurityGroupProd
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '8140'
           ToPort: '8140'
@@ -719,6 +724,10 @@ Resources:
           FromPort: '4000'
           ToPort: '4000'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: '9763'
@@ -743,6 +752,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '4000'
           ToPort: '4000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
           CidrIp: 0.0.0.0/0
   WSO2APIMLoadBalancerProd:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
