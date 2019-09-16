@@ -283,6 +283,10 @@ Resources:
           SourceSecurityGroupId: !Ref WSO2EILoadBalancerSecurityGroup
   WSO2BastionInstance:
     Type: 'AWS::EC2::Instance'
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
     Properties:
       DisableApiTermination: 'false'
       InstanceInitiatedShutdownBehavior: stop
