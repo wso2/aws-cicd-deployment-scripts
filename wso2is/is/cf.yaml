@@ -341,6 +341,10 @@ Resources:
           FromPort: '8140'
           ToPort: '8140'
           SourceSecurityGroupId: !Ref WSO2ISLoadBalancerSecurityGroupProd
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
   WSO2BastionInstanceProd:
     Type: 'AWS::EC2::Instance'
     CreationPolicy:
@@ -656,6 +660,10 @@ Resources:
           FromPort: '8080'
           ToPort: '8080'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: '9763'
@@ -684,6 +692,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '8080'
           ToPort: '8080'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
           CidrIp: 0.0.0.0/0
   WSO2ISLoadBalancerProd:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
