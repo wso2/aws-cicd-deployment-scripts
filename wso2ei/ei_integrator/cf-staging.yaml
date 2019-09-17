@@ -440,7 +440,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Count: 1
-        Timeout: PT20M
+        Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
@@ -549,12 +549,12 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Count: 1
-        Timeout: PT20M
+        Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT10M
+        PauseTime: PT20M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
