@@ -930,3 +930,29 @@ Mappings:
       Ubuntu1804: ami-0b382084a3cc80fb7
     us-west-1:
       Ubuntu1804: ami-0b6d9c2c447ab4299
+    us-west-2:
+      Ubuntu1804: ami-0897dc385cc87c84a
+    ap-south-1:
+      Ubuntu1804: ami-092e3cdeac40647ef
+    ap-northeast-1:
+      Ubuntu1804: ami-0e188a8f0a17f5359
+    ap-northeast-2:
+      Ubuntu1804: ami-017825b1c521d02c5
+    ap-southeast-1:
+      Ubuntu1804: ami-0a15b160762a9664b
+    ap-southeast-2:
+      Ubuntu1804: ami-0b7e0a634a1356911
+    ca-central-1:
+      Ubuntu1804: ami-0ef8ecec9501bf050
+    eu-central-1:
+      Ubuntu1804: ami-0521c2773875c9f2e
+    eu-west-1:
+      Ubuntu1804: ami-0d63a1ebc624058cd
+    eu-west-2:
+      Ubuntu1804: ami-0e8752d4902c13a57
+    eu-west-3:
+      Ubuntu1804: ami-0b48a1bd6d96eba46
+    eu-north-1:
+      Ubuntu1804: ami-05805bdf26a4afe6c
+    sa-east-1:
+      Ubuntu1804: ami-0393cec4dc744d66d
