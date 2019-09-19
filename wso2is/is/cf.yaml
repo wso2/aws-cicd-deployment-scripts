@@ -405,7 +405,7 @@ Resources:
           bash /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh 2>&1 | tee /home/wso2user/db_log.txt
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
-          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2BastionInstancerod --region ${AWS::Region}
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2BastionInstanceProd --region ${AWS::Region}
   WSO2ISNode1LaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
