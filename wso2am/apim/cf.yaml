@@ -194,16 +194,7 @@ Resources:
         - WSO2APIMEIP
         - AllocationId
       SubnetId: !Ref WSO2APIMPublicSubnet1
-  WSO2BastionEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      AllocationId: !GetAtt WSO2BastionEIP.AllocationId
-      InstanceId: !Ref WSO2BastionInstanceProd
   WSO2APIMEIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
-  WSO2BastionEIP:
     Type: 'AWS::EC2::EIP'
     Properties:
       Domain: vpc
