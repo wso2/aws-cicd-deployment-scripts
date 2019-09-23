@@ -409,6 +409,7 @@ Resources:
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/deployment/server/jaggeryapps/store/site/conf/site.json
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/api-manager.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
@@ -530,6 +531,7 @@ Resources:
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/deployment/server/jaggeryapps/store/site/conf/site.json
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/api-manager.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
