@@ -485,9 +485,7 @@ Resources:
               - 'Instance01'
           PropagateAtLaunch: 'true'
         - Key: cluster
-          Value: !Join
-            - ''
-            - - !Ref Product
+          Value: apim
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
@@ -613,9 +611,7 @@ Resources:
               - 'Instance02'
           PropagateAtLaunch: 'true'
         - Key: cluster
-          Value: !Join
-            - ''
-            - - !Ref Product
+          Value: apim
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
