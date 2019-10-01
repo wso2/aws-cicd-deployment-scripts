@@ -413,6 +413,10 @@ Resources:
 
           #!/bin/bash
           export PATH=~/.local/bin:$PATH
+          apt-get update >> /home/wso2user/install.log
+          apt install -y nfs-common >> /home/wso2user/install.log
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          wget --no-check-certificate --no-proxy 'http://wso2-cloudformation-templates.s3.amazonaws.com/private_ip_extractor.py' -P /usr/local/bin/
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
@@ -431,10 +435,10 @@ Resources:
           sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           mkdir -p /mnt/efs
           mount -t nfs4 -o nfsvers=4.1 ${WSO2EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
-          sleep 180
+          sleep 450
           if [ ! -d "/mnt/efs/server" ]; then
               mkdir -p /mnt/efs/server
-              cp -r //home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs
+              cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs
           fi
           rm -rf  /home/wso2user/${Product}-${Version}/repository/deployment/server
           ln -s /mnt/efs/server /home/wso2user/${Product}-${Version}/repository/deployment/server
@@ -540,6 +544,10 @@ Resources:
 
           #!/bin/bash
           export PATH=~/.local/bin:$PATH
+          apt-get update >> /home/wso2user/install.log
+          apt install -y nfs-common >> /home/wso2user/install.log
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          wget --no-check-certificate --no-proxy 'http://wso2-cloudformation-templates.s3.amazonaws.com/private_ip_extractor.py' -P /usr/local/bin/
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
@@ -558,10 +566,10 @@ Resources:
           sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           mkdir -p /mnt/efs
           mount -t nfs4 -o nfsvers=4.1 ${WSO2EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
-          sleep 180
+          sleep 450
           if [ ! -d "/mnt/efs/server" ]; then
               mkdir -p /mnt/efs/server
-              cp -r //home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs
+              cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs
           fi
           rm -rf  /home/wso2user/${Product}-${Version}/repository/deployment/server
           ln -s /mnt/efs/server /home/wso2user/${Product}-${Version}/repository/deployment/server
