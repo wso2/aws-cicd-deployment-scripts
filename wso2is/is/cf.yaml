@@ -1023,7 +1023,7 @@ Mappings:
     us-east-2:
       Ubuntu1804: ami-025381ad18973cd94
     us-west-1:
-      Ubuntu1804: ami-098eda006170f2afb
+      Ubuntu1804: ami-0d7d4852f5939bc5e
     us-west-2:
       Ubuntu1804: ami-06b2d90e2e762a752
     ap-south-1:
