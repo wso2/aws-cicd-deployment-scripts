@@ -559,7 +559,7 @@ Resources:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT10M
+        PauseTime: PT30M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
@@ -693,7 +693,7 @@ Resources:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT20M
+        PauseTime: PT30M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
