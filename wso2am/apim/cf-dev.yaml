@@ -39,6 +39,10 @@ Metadata:
           default: Environment Configurations
         Parameters:
           - Environment
+      - Label:
+          default: VPC Configuration for Dev,Staging
+        Parameters:
+          - VPCID
     ParameterLabels:
       AWSAccessKeyId:
         default: AWS Access Key ID
@@ -62,18 +66,15 @@ Metadata:
         default: Version
       Environment:
         default: Environment
+      VPCID:
+        default: VPC ID
 Resources:
   # networking configurations
-  WSO2VPC:
-    Type: 'AWS::EC2::VPC'
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
+  
   WSO2PublicSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       CidrBlock: 10.0.254.0/24
       AvailabilityZone: !Select
         - '0'
@@ -81,7 +82,7 @@ Resources:
   WSO2PublicSubnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       CidrBlock: 10.0.252.0/24
       AvailabilityZone: !Select
         - '1'
@@ -91,7 +92,7 @@ Resources:
   WSO2PublicRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
   WSO2PublicSubnet1RouteTableAssociation:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -113,11 +114,11 @@ Resources:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
       InternetGatewayId: !Ref WSO2PublicInternetGateway
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
   WSO2PrivateSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       CidrBlock: 10.0.1.0/24
       AvailabilityZone: !Select
         - '0'
@@ -125,7 +126,7 @@ Resources:
   WSO2PrivateSubnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       CidrBlock: 10.0.2.0/24
       AvailabilityZone: !Select
         - '1'
@@ -133,7 +134,7 @@ Resources:
   WSO2PrivateSubnetRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
   WSO2PrivateRoute:
     Type: 'AWS::EC2::Route'
     Properties:
@@ -165,7 +166,7 @@ Resources:
   WSO2DBInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: DB Security Group
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -204,7 +205,7 @@ Resources:
   WSO2EFSSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: EFS Security Group
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -233,7 +234,7 @@ Resources:
   BastionSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: WSO2 Bastion node Security Group
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -243,7 +244,7 @@ Resources:
   WSO2LoggingSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: WSO2 Logging Security Group
       GroupName: WSO2LoggingSecurityGroup
       SecurityGroupIngress:
@@ -262,7 +263,7 @@ Resources:
   WSO2SecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: WSO2 Enterprise Integrator Security Group
       GroupName: WSO2SecurityGroup
       SecurityGroupIngress:
@@ -640,7 +641,7 @@ Resources:
   WSO2LoadBalancerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref WSO2VPC
+      VpcId: !Ref VPCID
       GroupDescription: WSO2 ALB Security Group
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -746,7 +747,7 @@ Resources:
           Value: 'true'
       UnhealthyThresholdCount: 3
       VpcId:
-        Ref: WSO2VPC
+        Ref: VPCID
       Tags:
         - Key: Name
           Value: !Join
@@ -777,7 +778,7 @@ Resources:
           Value: 'true'
       UnhealthyThresholdCount: 3
       VpcId:
-        Ref: WSO2VPC
+        Ref: VPCID
       Tags:
         - Key: Name
           Value: !Join
@@ -1001,6 +1002,8 @@ Parameters:
   Version:
     Type: String
   Environment:
+    Type: String
+  VPCID:
     Type: String
 Mappings:
   WSO2LoggingMasterAMIRegionMap:
