@@ -21,8 +21,7 @@ Metadata:
       - Label:
           default: Cluster Configuration
         Parameters:
-          - AWSAccessKeyId
-          - AWSAccessKeySecret
+          - IAMRole
           - KeyPairName
           - WSO2InstanceType
       - Label:
@@ -40,10 +39,8 @@ Metadata:
           Parameters:
             - Environment
     ParameterLabels:
-      AWSAccessKeyId:
-        default: AWS Access Key ID
-      AWSAccessKeySecret:
-        default: AWS Access Secret Key
+      IAMRole:
+        default: AWS IAM Role
       CertificateName:
         default: SSL Certificate Name
       KeyPairName:
@@ -448,13 +445,12 @@ Resources:
           apt-get update
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
+          sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2ISLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2ISDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          sed -i "s^SECRET_KEY^${AWSAccessKeySecret}^g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
           export SECURITYGROUP=$(ec2metadata | grep -m 1 'security-groups:' | awk '{print $2}')
@@ -516,7 +512,7 @@ Resources:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT10M
+        PauseTime: PT20M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
@@ -564,13 +560,12 @@ Resources:
           apt-get update
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
+          sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2ISLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2ISDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          sed -i "s^SECRET_KEY^${AWSAccessKeySecret}^g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
           export SECURITYGROUP=$(ec2metadata | grep -m 1 'security-groups:' | awk '{print $2}')
@@ -978,9 +973,7 @@ Outputs:
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
 Parameters:
-  AWSAccessKeyId:
-    Type: String
-  AWSAccessKeySecret:
+  IAMRole:
     Type: String
   KeyPairName:
     Description: >-
