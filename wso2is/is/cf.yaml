@@ -408,7 +408,6 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref MonitoringInstanceIAMProfileProd
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -523,7 +522,6 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref MonitoringInstanceIAMProfileProd
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
