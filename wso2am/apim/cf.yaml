@@ -21,8 +21,7 @@ Metadata:
       - Label:
           default: Cluster Configuration
         Parameters:
-          - AWSAccessKeyId
-          - AWSAccessKeySecret
+          - IAMRole
           - KeyPairName
           - WSO2InstanceType
       - Label:
@@ -40,10 +39,8 @@ Metadata:
           Parameters:
             - Environment
     ParameterLabels:
-      AWSAccessKeyId:
-        default: AWS Access Key ID
-      AWSAccessKeySecret:
-        default: AWS Access Secret Key
+      IAMRole:
+        default: AWS IAM Role
       CertificateName:
         default: SSL Certificate Name
       KeyPairName:
@@ -436,7 +433,6 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref MonitoringInstanceIAMProfileProd
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -559,7 +555,7 @@ Resources:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT10M
+        PauseTime: PT30M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
@@ -570,7 +566,6 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref MonitoringInstanceIAMProfileProd
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -609,7 +604,6 @@ Resources:
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           wget --no-check-certificate --no-proxy 'http://wso2-cloudformation-templates.s3.amazonaws.com/private_ip_extractor.py' -P /usr/local/bin/
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          sed -i "s/ACCESS_KEY/${AWSAccessKeyId}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
           sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/deployment/server/jaggeryapps/store/site/conf/site.json
@@ -617,7 +611,6 @@ Resources:
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2APIMDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          sed -i "s^SECRET_KEY^${AWSAccessKeySecret}^g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
           export LogserverIP=${LoggingInstanceProd.PrivateIp}
@@ -693,7 +686,7 @@ Resources:
       AutoScalingRollingUpdate:
         MaxBatchSize: '2'
         MinInstancesInService: '1'
-        PauseTime: PT20M
+        PauseTime: PT30M
         SuspendProcesses:
           - AlarmNotification
         WaitOnResourceSignals: true
@@ -1044,9 +1037,7 @@ Outputs:
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
 Parameters:
-  AWSAccessKeyId:
-    Type: String
-  AWSAccessKeySecret:
+  IAMRole:
     Type: String
   KeyPairName:
     Description: >-
