@@ -60,12 +60,6 @@ Metadata:
       Environment:
         default: Environment
 Resources:
-  IAMProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: "/"
-      Roles:
-        - !Ref IAMRole
   # networking configurations
   WSO2VPC:
     Type: 'AWS::EC2::VPC'
