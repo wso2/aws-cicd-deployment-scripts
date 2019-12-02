@@ -398,6 +398,8 @@ Resources:
           export DB_PORT=${WSO2EIDBInstance.Endpoint.Port}
           export DB_USERNAME=${DBUsername}
           export DB_PASSWORD=${DBPassword}
+          rm -rf /home/wso2user/endpointCars
+          rm -rf /home/wso2user/${Product}-${Version}.zip
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           sed -i "s/CF_DB_HOST/${WSO2EIDBInstance.Endpoint.Address}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
@@ -984,8 +986,7 @@ Parameters:
   AWSAccessKeySecret:
     Type: String
   KeyPairName:
-    Description: >-
-      The private key used to log in to instances through SSH
+    Description: The private key used to log in to instances through SSH
     Type: 'AWS::EC2::KeyPair::KeyName'
   CertificateName:
     Description: A valid SSL certificate used for HTTPS
