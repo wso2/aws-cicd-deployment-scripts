@@ -364,6 +364,8 @@ Resources:
           export DB_PORT=${WSO2DBInstance.Endpoint.Port}
           export DB_USERNAME=${DBUsername}
           export DB_PASSWORD=${DBPassword}
+          rm -rf /home/wso2user/endpointCars
+          rm -rf /home/wso2user/${Product}-${Version}.zip
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           sed -i "s/CF_DB_HOST/${WSO2DBInstance.Endpoint.Address}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
