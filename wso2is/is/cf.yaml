@@ -410,6 +410,7 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
+      IamInstanceProfile: !Ref IAMProfile
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -454,11 +455,9 @@ Resources:
           sed -i "s/RDS_DNS_NAME/${WSO2ISDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export SECURITYGROUP=$(ec2metadata | grep -m 1 'security-groups:' | awk '{print $2}')
           export LogserverIP=${LoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           /home/wso2user/${Product}-${Version}/bin/wso2server.sh start
           sleep 30
           end=$((SECONDS+1200))
@@ -524,6 +523,7 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
+      IamInstanceProfile: !Ref IAMProfile
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -568,11 +568,9 @@ Resources:
           sed -i "s/RDS_DNS_NAME/${WSO2ISDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export SECURITYGROUP=$(ec2metadata | grep -m 1 'security-groups:' | awk '{print $2}')
           export LogserverIP=${LoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           /home/wso2user/${Product}-${Version}/bin/wso2server.sh start
           sleep 30
           end=$((SECONDS+1200))
