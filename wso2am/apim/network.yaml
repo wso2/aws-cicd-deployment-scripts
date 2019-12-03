@@ -1,0 +1,335 @@
+# Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Network Resources and Security Groups for WSO2 APIM deployment
+Resources:
+  # networking configurations
+  WSO2VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+  WSO2PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      CidrBlock: 10.0.254.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+  WSO2PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      CidrBlock: 10.0.252.0/24
+      AvailabilityZone: !Select
+        - '1'
+        - !GetAZs ''
+  WSO2PublicInternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+  WSO2PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref WSO2VPC
+  WSO2PublicSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref WSO2PublicRouteTable
+      SubnetId: !Ref WSO2PublicSubnet1
+  WSO2PublicSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref WSO2PublicRouteTable
+      SubnetId: !Ref WSO2PublicSubnet2
+  WSO2PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref WSO2PublicRouteTable
+      GatewayId: !Ref WSO2PublicInternetGateway
+      DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: WSO2VPCInternetGatewayAttachment
+  WSO2VPCInternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref WSO2PublicInternetGateway
+      VpcId: !Ref WSO2VPC
+  WSO2PrivateSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+  WSO2PrivateSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select
+        - '1'
+        - !GetAZs ''
+  WSO2PrivateSubnetRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref WSO2VPC
+  WSO2PrivateRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref WSO2NATGateway
+      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
+  WSO2PrivateSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
+      SubnetId: !Ref WSO2PrivateSubnet1
+  WSO2PrivateSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
+      SubnetId: !Ref WSO2PrivateSubnet2
+  WSO2NATGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - WSO2EIP
+        - AllocationId
+      SubnetId: !Ref WSO2PublicSubnet1
+  WSO2EIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  WSO2DBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: DB Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3306'
+          ToPort: '3306'
+          CidrIp: 0.0.0.0/0
+  WSO2EFSSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: WSO2 EFS Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '2049'
+          ToPort: '2049'
+          CidrIp: 0.0.0.0/0
+  WSO2BastionSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: WSO2 Bastion Instance Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  WSO2LoggingSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: WSO2 Logging Instance Security Group
+      GroupName: WSO2LoggingSecurityGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5601
+          ToPort: 5601
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref WSO2BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 5044
+          ToPort: 5044
+          CidrIp: 0.0.0.0/0
+  WSO2ProductSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: WSO2 Product Instance Security Group
+      GroupName: WSO2SecurityGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8280'
+          ToPort: '8280'
+          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '9763'
+          ToPort: '9763'
+          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '9443'
+          ToPort: '9443'
+          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '8243'
+          ToPort: '8243'
+          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '5672'
+          ToPort: '5672'
+          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '4000'
+          ToPort: '4000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8140'
+          ToPort: '8140'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
+  WSO2LoadBalancerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2VPC
+      GroupDescription: WSO2 ALB Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '9763'
+          ToPort: '9763'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9443'
+          ToPort: '9443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8243'
+          ToPort: '8243'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8280'
+          ToPort: '8280'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '4000'
+          ToPort: '4000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: '9763'
+          ToPort: '9763'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9443'
+          ToPort: '9443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8243'
+          ToPort: '8243'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8280'
+          ToPort: '8280'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '4000'
+          ToPort: '4000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5701'
+          ToPort: '5701'
+          CidrIp: 0.0.0.0/0
+Outputs:
+  WSO2VPCID:
+    Value: !Ref WSO2VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2VPC"
+    Description: VPC ID
+  WSO2PublicSubnet1:
+    Value: !Ref WSO2PublicSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2PublicSubnet1"
+    Description: Public Subnet 1 ID
+  WSO2PublicSubnet2:
+    Value: !Ref WSO2PublicSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2PublicSubnet2"
+    Description: Public Subnet 2 ID
+  WSO2PrivateSubnet1:
+    Value: !Ref WSO2PrivateSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2PrivateSubnet1"
+    Description: Private Subnet 1 ID
+  WSO2PrivateSubnet2:
+    Value: !Ref WSO2PrivateSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2PrivateSubnet2"
+    Description: Private Subnet 1 ID
+  WSO2DBSecurityGroup:
+    Value: !Ref WSO2DBSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2DBSecurityGroup"
+    Description: Database Instance Security Group
+  WSO2ProductSecurityGroup:
+    Value: !Ref WSO2ProductSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2ProductSecurityGroup"
+    Description: Product Instance Security Group
+  WSO2LoggingSecurityGroup:
+    Value: !Ref WSO2LoggingSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2LoggingSecurityGroup"
+    Description: Logging Instance Security Group
+  WSO2BastionSecurityGroup:
+    Value: !Ref WSO2BastionSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2BastionSecurityGroup"
+    Description: Bastion Instance Security Group
+  WSO2EFSSecurityGroup:
+    Value: !Ref WSO2EFSSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2EFSSecurityGroup"
+    Description: Elastic File System Security Group
+  WSO2LoadBalancerSecurityGroup:
+    Value: !Ref WSO2LoadBalancerSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-WSO2LoadBalancerSecurityGroup"
+    Description: Loadbalancer Security Group
