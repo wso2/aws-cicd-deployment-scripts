@@ -60,14 +60,14 @@ Metadata:
       Environment:
         default: Environment
 Resources:
-  MonitoringInstanceIAMRoleProd:
+  WSO2EIMonitoringInstanceIAMRole:
     Type: AWS::IAM::Role
     Description: IAM Instance role to read AWS resource to discover instances to monitor
     Properties:
       RoleName: !Join
         - '-'
         - - !Ref 'AWS::Region'
-          - 'MonitoringInstanceIAMRoleProd'
+          - 'WSO2EIMonitoringInstanceIAMRole'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -75,18 +75,18 @@ Resources:
               Service: [ec2.amazonaws.com]
             Action: sts:AssumeRole
       Path: /
-  MonitoringInstanceIAMProfileProd:
+  WSO2EIMonitoringInstanceIAMProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
       Roles:
-        - Ref: MonitoringInstanceIAMRoleProd
-  MonitoringInstanceIAMPolicyProd:
+        - Ref: MonitoringInstanceIAMRole
+  WSO2EIMonitoringInstanceIAMPolicy:
     Type: AWS::IAM::Policy
-    DependsOn: MonitoringInstanceIAMRoleProd
+    DependsOn: WSO2EIMonitoringInstanceIAMRole
     Description: Read AWS resources to discover instances to monitor
     Properties:
-      PolicyName: MonitoringInstanceReadPolicy
+      PolicyName: WSO2EIMonitoringInstanceReadPolicy
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -96,7 +96,7 @@ Resources:
               - elasticloadbalancing:Describe*
               - ec2:Describe*
             Resource: "*"
-      Roles: [!Ref MonitoringInstanceIAMRoleProd]
+      Roles: [!Ref WSO2EIMonitoringInstanceIAMRole]
   # networking configurations
   WSO2EIVPC:
     Type: 'AWS::EC2::VPC'
@@ -231,7 +231,7 @@ Resources:
         - !Ref WSO2EIPrivateSubnet1
         - !Ref WSO2EIPrivateSubnet2
   # Product configurations
-  BastionSecurityGroupProd:
+  WSO2EIBastionSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2EIVPC
@@ -241,7 +241,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-  LoggingSecurityGroupProd:
+  WSO2EILoggingSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2EIVPC
@@ -260,7 +260,7 @@ Resources:
           FromPort: 5044
           ToPort: 5044
           CidrIp: 0.0.0.0/0
-  MonitoringSecurityGroupProd:
+  WSO2EIMonitoringSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2EIVPC
@@ -275,7 +275,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           SourceSecurityGroupId: !Ref BastionSecurityGroupProd
-  WSO2EISecurityGroupProd:
+  WSO2EIProductSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2EIVPC
@@ -297,11 +297,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9100
           ToPort: 9100
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2EIMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '2222'
           ToPort: '2222'
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2EIMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '8280'
           ToPort: '8280'
@@ -317,7 +317,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '9443'
           ToPort: '9443'
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2EIMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '8243'
           ToPort: '8243'
@@ -342,7 +342,7 @@ Resources:
           FromPort: '8140'
           ToPort: '8140'
           SourceSecurityGroupId: !Ref WSO2EILoadBalancerSecurityGroupProd
-  WSO2BastionInstanceProd:
+  WSO2EIBastionInstanceProd:
     Type: 'AWS::EC2::Instance'
     CreationPolicy:
       ResourceSignal:
@@ -357,7 +357,11 @@ Resources:
       Monitoring: 'false'
       Tags:
         - Key: Name
-          Value: WSO2BastionProdInstance
+          Value: !Join
+            - ''
+            - - 'WSO2EIBastion'
+              - !Ref Environment
+              - 'Instance'
       NetworkInterfaces:
         - DeleteOnTermination: 'true'
           AssociatePublicIpAddress : 'true'
@@ -404,8 +408,8 @@ Resources:
           bash /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh 2>&1 | tee /home/wso2user/db_log.txt
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
-          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2BastionInstanceProd --region ${AWS::Region}
-  WSO2EINode1LaunchConfiguration:
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EIBastionInstanceProd --region ${AWS::Region}
+  WSO2EINodeLaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
       ImageId: !Ref AMIid
@@ -444,7 +448,7 @@ Resources:
 
           #!/bin/bash
           export PATH=~/.local/bin:$PATH
-          apt-get update
+          apt-get update >> /home/wso2user/install.log
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           cp /home/wso2user/endpointCars/*_common*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
@@ -457,7 +461,7 @@ Resources:
           sed -i "s/RDS_DNS_NAME/${WSO2EIDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${LoggingInstanceProd.PrivateIp}
+          export LogserverIP=${WSO2EILoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           /home/wso2user/${Product}-${Version}/bin/integrator.sh start
@@ -467,7 +471,7 @@ Resources:
               sleep 10
               wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
               if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINode1AutoScalingGroup --region ${AWS::Region}
+                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINodeAutoScalingGroup --region ${AWS::Region}
                 break
               fi
           done
@@ -478,24 +482,28 @@ Resources:
       - WSO2EILoadBalancerProd
       - WSO2EIVPCInternetGatewayAttachment
       - WSO2EIDBInstance
-      - WSO2BastionInstanceProd
-      - LoggingInstanceProd
-  WSO2EINode1AutoScalingGroup:
+      - WSO2EIBastionInstanceProd
+      - WSO2EILoggingInstanceProd
+  WSO2EINodeAutoScalingGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
-      LaunchConfigurationName: !Ref WSO2EINode1LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
+      LaunchConfigurationName: !Ref WSO2EINodeLaunchConfiguration
+      DesiredCapacity: 2
+      MinSize: 2
       MaxSize: 2
       TargetGroupARNs:
-        - !Ref WSO2EIALBTargetGroupProd
-        - !Ref WSO2EI8243ALBTargetGroupProd
-        - !Ref WSO2EIServicesALBTargetGroupProd
+        - !Ref WSO2EIALB9443TargetGroupProd
+        - !Ref WSO2EIALB8243TargetGroupProd
+        - !Ref WSO2EIALB8280TargetGroupProd
       VPCZoneIdentifier:
         - !Ref WSO2EIPrivateSubnet1
       Tags:
         - Key: Name
-          Value: WSO2EIProdInstance01
+          Value: !Join
+            - ''
+            - - 'WSO2EI'
+              - !Ref Environment
+              - 'Instance'
           PropagateAtLaunch: 'true'
         - Key: cluster
           Value: ei
@@ -508,7 +516,7 @@ Resources:
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
-        Count: 1
+        Count: 2
         Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -520,122 +528,6 @@ Resources:
         WaitOnResourceSignals: true
     DependsOn:
       - WSO2EILoadBalancerProd
-  WSO2EINode2LaunchConfiguration:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    Properties:
-      ImageId: !Ref AMIid
-      InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref IAMProfile
-      InstanceMonitoring: 'false'
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: '20'
-            VolumeType: gp2
-            DeleteOnTermination: 'true'
-      KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref WSO2EISecurityGroupProd
-      UserData: !Base64
-        'Fn::Sub': |
-          Content-Type: multipart/mixed; boundary="//"
-          MIME-Version: 1.0
-
-          --//
-          Content-Type: text/cloud-config; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="cloud-config.txt"
-
-          #cloud-config
-          cloud_final_modules:
-          - [scripts-user, always]
-
-          --//
-          Content-Type: text/x-shellscript; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="userdata.txt"
-
-          #!/bin/bash
-          export PATH=~/.local/bin:$PATH
-          apt-get update
-          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-          unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          cp /home/wso2user/endpointCars/*_common*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
-          cp /home/wso2user/endpointCars/*_production*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
-          sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
-          sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          sed -i "s/RDS_DNS_NAME/${WSO2EIDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
-          export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${LoggingInstanceProd.PrivateIp}
-          echo "$LogserverIP logserver" >> /etc/hosts
-          sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          /home/wso2user/${Product}-${Version}/bin/integrator.sh start
-          sleep 30
-          end=$((SECONDS+1200))
-          while [ $SECONDS -lt $end ] ; do
-              sleep 10
-              wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
-              if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINode2AutoScalingGroup --region ${AWS::Region}
-                break
-              fi
-          done
-          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
-          cat /dev/null > ~/.bash_history && history -c
-    DependsOn:
-      - WSO2EISecurityGroupProd
-      - WSO2EILoadBalancerProd
-      - WSO2EIVPCInternetGatewayAttachment
-      - WSO2EIDBInstance
-      - WSO2BastionInstanceProd
-      - LoggingInstanceProd
-  WSO2EINode2AutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-    Properties:
-      LaunchConfigurationName: !Ref WSO2EINode2LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
-      MaxSize: 2
-      TargetGroupARNs:
-        - !Ref WSO2EIALBTargetGroupProd
-        - !Ref WSO2EI8243ALBTargetGroupProd
-        - !Ref WSO2EIServicesALBTargetGroupProd
-      VPCZoneIdentifier:
-        - !Ref WSO2EIPrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: WSO2EIProdInstance02
-          PropagateAtLaunch: 'true'
-        - Key: cluster
-          Value: ei
-          PropagateAtLaunch: 'true'
-        - Key: Environment
-          Value: Prod
-          PropagateAtLaunch: 'true'
-        - Key: ServerType
-          Value: 'WSO2'
-          PropagateAtLaunch: 'true'
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
-        Timeout: PT30M
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MaxBatchSize: '2'
-        MinInstancesInService: '1'
-        PauseTime: PT20M
-        SuspendProcesses:
-          - AlarmNotification
-        WaitOnResourceSignals: true
-    DependsOn:
-      - WSO2EILoadBalancerProd
-      - WSO2EINode1AutoScalingGroup
   WSO2EILoadBalancerSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -717,7 +609,7 @@ Resources:
         - !Ref WSO2EIPublicSubnet2
       SecurityGroups:
         - !Ref WSO2EILoadBalancerSecurityGroupProd
-  WSO2EIALBTargetGroupProd:
+  WSO2EIALB9443TargetGroupProd:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -742,7 +634,7 @@ Resources:
       Tags:
         - Key: Name
           Value: ei
-  WSO2EI8243ALBTargetGroupProd:
+  WSO2EIALB8243TargetGroupProd:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -767,7 +659,7 @@ Resources:
       Tags:
         - Key: Name
           Value: ei
-  WSO2EIServicesALBTargetGroupProd:
+  WSO2EIALB8280TargetGroupProd:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -792,21 +684,21 @@ Resources:
       Tags:
         - Key: Name
           Value: ei
-  WSO2EIServicesALBListenerProd:
+  WSO2EI8280ALBListenerProd:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2EIServicesALBTargetGroupProd
+          TargetGroupArn: !Ref WSO2EIALB8280TargetGroupProd
       LoadBalancerArn: !Ref WSO2EILoadBalancerProd
       Port: 8280
       Protocol: HTTP
-  WSO2EIALBListenerProd:
+  WSO2EIALB9443ListenerProd:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2EIALBTargetGroupProd
+          TargetGroupArn: !Ref WSO2EIALB9443TargetGroupProd
       Certificates:
         - CertificateArn: !Join
           - ''
@@ -826,7 +718,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2EI8243ALBTargetGroupProd
+          TargetGroupArn: !Ref WSO2EIALB8243TargetGroupProd
       Certificates:
         - CertificateArn: !Join
             - ''
@@ -841,7 +733,7 @@ Resources:
       SslPolicy: ELBSecurityPolicy-TLS-1-1-2017-01
     DependsOn:
       - WSO2EILoadBalancerSecurityGroupProd
-  MonitoringInstanceProd:
+  WSO2EIMonitoringInstanceProd:
     Type: 'AWS::EC2::Instance'
     Properties:
       DisableApiTermination: 'false'
@@ -886,7 +778,7 @@ Resources:
       - WSO2EILoadBalancerProd
       - WSO2EIVPCInternetGatewayAttachment
       - WSO2EIDBInstance
-  LoggingInstanceProd:
+  WSO2EILoggingInstanceProd:
     Type: 'AWS::EC2::Instance'
     Properties:
       DisableApiTermination: 'false'
@@ -906,7 +798,7 @@ Resources:
       Monitoring: 'false'
       Tags:
         - Key: Name
-          Value: WSO2LoggingProdInstance
+          Value: WSO2EILoggingProdInstance
       NetworkInterfaces:
         - DeleteOnTermination: 'true'
           AssociatePublicIpAddress: 'true'
@@ -962,7 +854,7 @@ Outputs:
       - ''
       - - 'http://'
         - !GetAtt
-          - MonitoringInstanceProd
+          - WSO2EIMonitoringInstanceProd
           - PublicDnsName
         - ':3000/d/dxHncuHS/'
     Description: Monitoring Dashboard URL (Grafana Dashboard)
@@ -971,7 +863,7 @@ Outputs:
       - ''
       - - 'http://'
         - !GetAtt
-          - LoggingInstanceProd
+          - WSO2EILoggingInstanceProd
           - PublicDnsName
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
