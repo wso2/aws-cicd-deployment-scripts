@@ -28,6 +28,7 @@ Metadata:
           default: Network Configuration
         Parameters:
           - CertificateName
+          - NetworkStackName
       - Label:
           default: Database Configuration
         Parameters:
@@ -43,6 +44,8 @@ Metadata:
         default: AWS IAM Role
       CertificateName:
         default: SSL Certificate Name
+      NetworkStackName:
+        default: Network Stack Name
       KeyPairName:
         default: Key Pair Name
       DBUsername:
@@ -60,229 +63,39 @@ Metadata:
       Environment:
         default: Environment
 Resources:
-  # networking configurations
-  WSO2VPC:
-    Type: 'AWS::EC2::VPC'
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-  WSO2PublicSubnet1:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.254.0/24
-      AvailabilityZone: !Select
-        - '0'
-        - !GetAZs ''
-  WSO2PublicSubnet2:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.252.0/24
-      AvailabilityZone: !Select
-        - '1'
-        - !GetAZs ''
-  WSO2PublicInternetGateway:
-    Type: 'AWS::EC2::InternetGateway'
-  WSO2PublicRouteTable:
-    Type: 'AWS::EC2::RouteTable'
-    Properties:
-      VpcId: !Ref WSO2VPC
-  WSO2PublicSubnet1RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref WSO2PublicRouteTable
-      SubnetId: !Ref WSO2PublicSubnet1
-  WSO2PublicSubnet2RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref WSO2PublicRouteTable
-      SubnetId: !Ref WSO2PublicSubnet2
-  WSO2PublicRoute:
-    Type: 'AWS::EC2::Route'
-    Properties:
-      RouteTableId: !Ref WSO2PublicRouteTable
-      GatewayId: !Ref WSO2PublicInternetGateway
-      DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: WSO2VPCInternetGatewayAttachment
-  WSO2VPCInternetGatewayAttachment:
-    Type: 'AWS::EC2::VPCGatewayAttachment'
-    Properties:
-      InternetGatewayId: !Ref WSO2PublicInternetGateway
-      VpcId: !Ref WSO2VPC
-  WSO2PrivateSubnet1:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select
-        - '0'
-        - !GetAZs ''
-  WSO2PrivateSubnet2:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select
-        - '1'
-        - !GetAZs ''
-  WSO2PrivateSubnetRouteTable:
-    Type: 'AWS::EC2::RouteTable'
-    Properties:
-      VpcId: !Ref WSO2VPC
-  WSO2PrivateRoute:
-    Type: 'AWS::EC2::Route'
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref WSO2NATGateway
-      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
-  WSO2PrivateSubnet1RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
-      SubnetId: !Ref WSO2PrivateSubnet1
-  WSO2PrivateSubnet2RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
-      SubnetId: !Ref WSO2PrivateSubnet2
-  WSO2NATGateway:
-    Type: 'AWS::EC2::NatGateway'
-    Properties:
-      AllocationId: !GetAtt
-        - WSO2EIP
-        - AllocationId
-      SubnetId: !Ref WSO2PublicSubnet1
-  WSO2EIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
-  # database configurations
-  WSO2DBInstanceSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      GroupDescription: DB Security Group
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '3306'
-          ToPort: '3306'
-          CidrIp: 0.0.0.0/0
-  WSO2DBInstance:
+  WSO2EIDBInstance:
     Type: 'AWS::RDS::DBInstance'
     DeletionPolicy: Delete
     Properties:
       VPCSecurityGroups:
-        - !Ref WSO2DBInstanceSecurityGroup
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2DBSecurityGroup"
       DBInstanceClass: db.t2.medium
       AllocatedStorage: 5
       BackupRetentionPeriod: '0'
       DBInstanceIdentifier: !Join
-        - '-'
-        - - 'WSO2EIDB'
+        - ''
+        - - 'WSO2APIMDB'
           - !Ref Environment
           - 'Instance'
-      DBName: WSO2_DB
+      DBName: WSO2_EI_DB
       Engine: !Ref DBType
       MasterUsername: !Ref DBUsername
       MasterUserPassword: !Ref DBPassword
       MultiAZ: 'false'
       StorageType: gp2
-      DBSubnetGroupName: !Ref WSO2DBSubnetGroup
-  WSO2DBSubnetGroup:
+      DBSubnetGroupName: !Ref WSO2EIDBSubnetGroup
+  WSO2EIDBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
       DBSubnetGroupDescription: DB Subnet Group
       SubnetIds:
-        - !Ref WSO2PrivateSubnet1
-        - !Ref WSO2PrivateSubnet2
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2PrivateSubnet1"
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2PrivateSubnet2"
   # Product configurations
-  BastionSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      GroupDescription: WSO2 Bastion node Security Group
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-  WSO2LoggingSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      GroupDescription: WSO2 Logging Security Group
-      GroupName: WSO2LoggingSecurityGroup
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 5601
-          ToPort: 5601
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroup
-        - IpProtocol: tcp
-          FromPort: 5044
-          ToPort: 5044
-          CidrIp: 0.0.0.0/0
-  WSO2SecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      GroupDescription: WSO2 Enterprise Integrator Security Group
-      GroupName: WSO2SecurityGroup
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 9200
-          ToPort: 9200
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8280'
-          ToPort: '8280'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '9763'
-          ToPort: '9763'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '9443'
-          ToPort: '9443'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '8243'
-          ToPort: '8243'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '5672'
-          ToPort: '5672'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '5701'
-          ToPort: '5701'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '4100'
-          ToPort: '4100'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8080'
-          ToPort: '8080'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8140'
-          ToPort: '8140'
-          SourceSecurityGroupId: !Ref WSO2LoadBalancerSecurityGroup
-  WSO2BastionInstance:
+  WSO2EIBastionInstance:
     Type: 'AWS::EC2::Instance'
     CreationPolicy:
       ResourceSignal:
@@ -299,7 +112,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ''
-            - - 'WSO2Bastion'
+            - - 'WSO2EIBastion'
               - !Ref Environment
               - 'Instance'
       NetworkInterfaces:
@@ -307,9 +120,12 @@ Resources:
           AssociatePublicIpAddress : 'true'
           Description: Primary network interface
           DeviceIndex: 0
-          SubnetId: !Ref WSO2PublicSubnet1
+          SubnetId:
+            Fn::ImportValue:
+              Fn::Sub: "${NetworkStackName}-WSO2PublicSubnet1"
           GroupSet:
-            - !Ref BastionSecurityGroup
+            - Fn::ImportValue:
+                !Sub "${NetworkStackName}-WSO2BastionSecurityGroup"
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -335,26 +151,26 @@ Resources:
           export PATH=~/.local/bin:$PATH
           apt-get update
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-          export DB_HOSTNAME=${WSO2DBInstance.Endpoint.Address}
-          export DB_PORT=${WSO2DBInstance.Endpoint.Port}
+          export DB_HOSTNAME=${WSO2EIDBInstance.Endpoint.Address}
+          export DB_PORT=${WSO2EIDBInstance.Endpoint.Port}
           export DB_USERNAME=${DBUsername}
           export DB_PASSWORD=${DBPassword}
           rm -rf /home/wso2user/endpointCars
           rm -rf /home/wso2user/${Product}-${Version}.zip
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
-          sed -i "s/CF_DB_HOST/${WSO2DBInstance.Endpoint.Address}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
-          sed -i "s/CF_DB_PORT/${WSO2DBInstance.Endpoint.Port}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
+          sed -i "s/CF_DB_HOST/${WSO2EIDBInstance.Endpoint.Address}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
+          sed -i "s/CF_DB_PORT/${WSO2EIDBInstance.Endpoint.Port}/g" /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh
           bash /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh 2>&1 | tee /home/wso2user/db_log.txt
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
-          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2BastionInstance --region ${AWS::Region}
-  WSO2Node1LaunchConfiguration:
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EIBastionInstance --region ${AWS::Region}
+  WSO2EINodeLaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref IAMProfile
+      IamInstanceProfile: !Ref IAMRole
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -364,7 +180,8 @@ Resources:
             DeleteOnTermination: 'true'
       KeyName: !Ref KeyPairName
       SecurityGroups:
-        - !Ref WSO2SecurityGroup
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2ProductSecurityGroup"
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -388,20 +205,20 @@ Resources:
 
           #!/bin/bash
           export PATH=~/.local/bin:$PATH
-          apt-get update
+          apt-get update >> /home/wso2user/install.log
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           cp /home/wso2user/endpointCars/*_common*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
           cp /home/wso2user/endpointCars/*_dev*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
           sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          sed -i "s/RDS_DNS_NAME/${WSO2DBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
+          sed -i "s/RDS_DNS_NAME/${WSO2EIDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${WSO2LoggingInstance.PrivateIp}
+          export LogserverIP=${WSO2EILoggingInstance.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           /home/wso2user/${Product}-${Version}/bin/integrator.sh start
@@ -411,46 +228,45 @@ Resources:
               sleep 10
               wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
               if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2Node1AutoScalingGroup --region ${AWS::Region}
+                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINodeAutoScalingGroup --region ${AWS::Region}
                 break
               fi
           done
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2SecurityGroup
-      - WSO2LoadBalancer
-      - WSO2VPCInternetGatewayAttachment
-      - WSO2DBInstance
-      - WSO2BastionInstance
-      - WSO2LoggingInstance
-  WSO2Node1AutoScalingGroup:
+      - WSO2EILoadBalancer
+      - WSO2EIDBInstance
+      - WSO2EIBastionInstance
+      - WSO2EILoggingInstance
+  WSO2EINodeAutoScalingGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
-      LaunchConfigurationName: !Ref WSO2Node1LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
+      LaunchConfigurationName: !Ref WSO2EINodeLaunchConfiguration
+      DesiredCapacity: 2
+      MinSize: 2
       MaxSize: 2
       TargetGroupARNs:
-        - !Ref WSO2ALBTargetGroup
-        - !Ref WSO28243ALBTargetGroup
-        - !Ref WSO2ServicesALBTargetGroup
+        - !Ref WSO2EIALB9443TargetGroup
+        - !Ref WSO2EIALB8243TargetGroup
+        - !Ref WSO2EIALB8280TargetGroup
       VPCZoneIdentifier:
-        - !Ref WSO2PrivateSubnet1
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2PrivateSubnet1"
       Tags:
         - Key: Name
           Value: !Join
             - ''
             - - 'WSO2EI'
               - !Ref Environment
-              - 'Instance01'
+              - 'Instance'
           PropagateAtLaunch: 'true'
         - Key: cluster
           Value: ei
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
-        Count: 1
+        Count: 2
         Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -461,206 +277,24 @@ Resources:
           - AlarmNotification
         WaitOnResourceSignals: true
     DependsOn:
-      - WSO2LoadBalancer
-  WSO2Node2LaunchConfiguration:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    Properties:
-      ImageId: !Ref AMIid
-      InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref IAMProfile
-      InstanceMonitoring: 'false'
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: '20'
-            VolumeType: gp2
-            DeleteOnTermination: 'true'
-      KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref WSO2SecurityGroup
-      UserData: !Base64
-        'Fn::Sub': |
-          Content-Type: multipart/mixed; boundary="//"
-          MIME-Version: 1.0
-
-          --//
-          Content-Type: text/cloud-config; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="cloud-config.txt"
-
-          #cloud-config
-          cloud_final_modules:
-          - [scripts-user, always]
-
-          --//
-          Content-Type: text/x-shellscript; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="userdata.txt"
-
-          #!/bin/bash
-          export PATH=~/.local/bin:$PATH
-          apt-get update
-          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-          unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          cp /home/wso2user/endpointCars/*_common*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
-          cp /home/wso2user/endpointCars/*_dev*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
-          sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2LoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
-          sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          sed -i "s/RDS_DNS_NAME/${WSO2DBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
-          tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
-          export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${WSO2LoggingInstance.PrivateIp}
-          echo "$LogserverIP logserver" >> /etc/hosts
-          sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          /home/wso2user/${Product}-${Version}/bin/integrator.sh start
-          sleep 30
-          end=$((SECONDS+1200))
-          while [ $SECONDS -lt $end ] ; do
-              sleep 10
-              wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
-              if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2Node2AutoScalingGroup --region ${AWS::Region}
-                break
-              fi
-          done
-          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
-          cat /dev/null > ~/.bash_history && history -c
-    DependsOn:
-      - WSO2SecurityGroup
-      - WSO2LoadBalancer
-      - WSO2VPCInternetGatewayAttachment
-      - WSO2DBInstance
-      - WSO2BastionInstance
-      - WSO2LoggingInstance
-  WSO2Node2AutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-    Properties:
-      LaunchConfigurationName: !Ref WSO2Node2LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
-      MaxSize: 2
-      TargetGroupARNs:
-        - !Ref WSO2ALBTargetGroup
-        - !Ref WSO28243ALBTargetGroup
-        - !Ref WSO2ServicesALBTargetGroup
-      VPCZoneIdentifier:
-        - !Ref WSO2PrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: !Join
-            - ''
-            - - 'WSO2EI'
-              - !Ref Environment
-              - 'Instance02'
-          PropagateAtLaunch: 'true'
-        - Key: cluster
-          Value: ei
-          PropagateAtLaunch: 'true'
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
-        Timeout: PT30M
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MaxBatchSize: '2'
-        MinInstancesInService: '1'
-        PauseTime: PT20M
-        SuspendProcesses:
-          - AlarmNotification
-        WaitOnResourceSignals: true
-    DependsOn:
-      - WSO2LoadBalancer
-      - WSO2Node1AutoScalingGroup
-  WSO2LoadBalancerSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref WSO2VPC
-      GroupDescription: WSO2 ALB Security Group
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '9763'
-          ToPort: '9763'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '9443'
-          ToPort: '9443'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8243'
-          ToPort: '8243'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8280'
-          ToPort: '8280'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '4100'
-          ToPort: '4100'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8080'
-          ToPort: '8080'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '5701'
-          ToPort: '5701'
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: '9763'
-          ToPort: '9763'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '9443'
-          ToPort: '9443'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8243'
-          ToPort: '8243'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8280'
-          ToPort: '8280'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '4100'
-          ToPort: '4100'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '8080'
-          ToPort: '8080'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '5701'
-          ToPort: '5701'
-          CidrIp: 0.0.0.0/0
-  WSO2LoadBalancer:
+      - WSO2EILoadBalancer
+  WSO2EILoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Join
         - ''
-        - - 'WSO2LoadBalancer'
+        - - 'WSO2EILoadBalancer'
           - !Ref Environment
       Scheme: internet-facing
       Subnets:
-        - !Ref WSO2PublicSubnet1
-        - !Ref WSO2PublicSubnet2
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2PublicSubnet1"
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2PublicSubnet2"
       SecurityGroups:
-        - !Ref WSO2LoadBalancerSecurityGroup
-  WSO2ALBTargetGroup:
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2LoadBalancerSecurityGroup"
+  WSO2EIALB9443TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -673,7 +307,8 @@ Resources:
         HttpCode: 200
       Name: !Join
         - '-'
-        - - 'carbon'
+        - - 'ei'
+          - 'carbon'
           - !Ref Environment
           - '9443'
       Port: 9443
@@ -685,13 +320,14 @@ Resources:
           Value: 'true'
       UnhealthyThresholdCount: 3
       VpcId:
-        Ref: WSO2VPC
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2VPC"
       Tags:
         - Key: Name
           Value: !Join
             - ''
             - - !Ref Product
-  WSO28243ALBTargetGroup:
+  WSO2EIALB8243TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -704,7 +340,8 @@ Resources:
         HttpCode: 200
       Name: !Join
         - '-'
-        - - 'carbon'
+        - - 'ei'
+          - 'carbon'
           - !Ref Environment
           - '8243'
       Port: 8243
@@ -716,13 +353,14 @@ Resources:
           Value: 'true'
       UnhealthyThresholdCount: 3
       VpcId:
-        Ref: WSO2VPC
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2VPC"
       Tags:
         - Key: Name
           Value: !Join
             - ''
             - - !Ref Product
-  WSO2ServicesALBTargetGroup:
+  WSO2EIALB8280TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -735,7 +373,8 @@ Resources:
         HttpCode: 200
       Name: !Join
         - '-'
-        - - 'carbon'
+        - - 'ei'
+          - 'carbon'
           - !Ref Environment
           - '8280'
       Port: 8280
@@ -747,27 +386,28 @@ Resources:
           Value: 'true'
       UnhealthyThresholdCount: 3
       VpcId:
-        Ref: WSO2VPC
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2VPC"
       Tags:
         - Key: Name
           Value: !Join
             - ''
             - - !Ref Product
-  WSO2ServicesALBListener:
+  WSO2EIALB8280Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2ServicesALBTargetGroup
-      LoadBalancerArn: !Ref WSO2LoadBalancer
+          TargetGroupArn: !Ref WSO2EIALB8280TargetGroup
+      LoadBalancerArn: !Ref WSO2EILoadBalancer
       Port: 8280
       Protocol: HTTP
-  WSO2ALBListener:
+  WSO2EIALB443Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2ALBTargetGroup
+          TargetGroupArn: !Ref WSO2EIALB9443TargetGroup
       Certificates:
         - CertificateArn: !Join
             - ''
@@ -776,18 +416,16 @@ Resources:
               - ':server-certificate'
               - /
               - !Ref CertificateName
-      LoadBalancerArn: !Ref WSO2LoadBalancer
+      LoadBalancerArn: !Ref WSO2EILoadBalancer
       Port: 443
       Protocol: HTTPS
       SslPolicy: ELBSecurityPolicy-TLS-1-1-2017-01
-    DependsOn:
-      - WSO2LoadBalancerSecurityGroup
-  WSO28243ALBListener:
+  WSO2EIALB8243Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO28243ALBTargetGroup
+          TargetGroupArn: !Ref WSO2EIALB8243TargetGroup
       Certificates:
         - CertificateArn: !Join
             - ''
@@ -796,13 +434,11 @@ Resources:
               - ':server-certificate'
               - /
               - !Ref CertificateName
-      LoadBalancerArn: !Ref WSO2LoadBalancer
+      LoadBalancerArn: !Ref WSO2EILoadBalancer
       Port: 8243
       Protocol: HTTPS
       SslPolicy: ELBSecurityPolicy-TLS-1-1-2017-01
-    DependsOn:
-      - WSO2LoadBalancerSecurityGroup
-  WSO2LoggingInstance:
+  WSO2EILoggingInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       DisableApiTermination: 'false'
@@ -824,7 +460,7 @@ Resources:
         - Key: Name
           Value: !Join
             - ''
-            - - 'WSO2Logging'
+            - - 'WSO2EILogging'
               - !Ref Environment
               - 'Instance'
       NetworkInterfaces:
@@ -832,9 +468,12 @@ Resources:
           AssociatePublicIpAddress: 'true'
           Description: Primary network interface
           DeviceIndex: 0
-          SubnetId: !Ref WSO2PublicSubnet1
+          SubnetId:
+            Fn::ImportValue:
+              Fn::Sub: "${NetworkStackName}-WSO2PublicSubnet1"
           GroupSet:
-            - !Ref WSO2LoggingSecurityGroup
+            - Fn::ImportValue:
+                !Sub "${NetworkStackName}-WSO2LoggingSecurityGroup"
       UserData: !Base64
         'Fn::Sub': |
           #cloud-config
@@ -845,17 +484,15 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2SecurityGroup
-      - WSO2LoadBalancer
-      - WSO2VPCInternetGatewayAttachment
-      - WSO2DBInstance
+      - WSO2EILoadBalancer
+      - WSO2EIDBInstance
 Outputs:
   ConsoleURL:
     Value: !Join
       - ''
       - - 'https://'
         - !GetAtt
-          - WSO2LoadBalancer
+          - WSO2EILoadBalancer
           - DNSName
         - '/carbon'
     Description: WSO2 Enterprise Integrator Management Console URL
@@ -864,7 +501,7 @@ Outputs:
       - ''
       - - 'http://'
         - !GetAtt
-          - WSO2LoadBalancer
+          - WSO2EILoadBalancer
           - DNSName
         - ':8280'
     Description: WSO2 Enterprise Integrator HTTP Gateway endpoint
@@ -873,7 +510,7 @@ Outputs:
       - ''
       - - 'https://'
         - !GetAtt
-          - WSO2LoadBalancer
+          - WSO2EILoadBalancer
           - DNSName
         - ':8243'
     Description: WSO2 Enterprise Integrator HTTPS Gateway endpoint
@@ -882,7 +519,7 @@ Outputs:
       - ''
       - - 'http://'
         - !GetAtt
-          - WSO2LoggingInstance
+          - WSO2EILoggingInstance
           - PublicDnsName
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
@@ -896,6 +533,9 @@ Parameters:
     Description: A valid SSL certificate used for HTTPS
     Type: String
     MinLength: 1
+  NetworkStackName:
+    Description: Name of the stack with network resources exported
+    Type: String
   WSO2InstanceType:
     Type: String
     Default: t2.medium
