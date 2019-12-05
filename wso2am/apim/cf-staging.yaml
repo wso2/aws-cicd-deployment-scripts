@@ -29,7 +29,6 @@ Metadata:
         Parameters:
           - CertificateName
           - NetworkStackName
-          - VPCID
       - Label:
           default: Database Configuration
         Parameters:
@@ -47,8 +46,6 @@ Metadata:
         default: SSL Certificate Name
       NetworkStackName:
         default: Network Stack Name
-      VPCID:
-        default: VPC ID
       KeyPairName:
         default: Key Pair Name
       DBUsername:
@@ -327,7 +324,7 @@ Resources:
     Properties:
       Name: !Join
         - ''
-        - - 'WSO2LoadBalancer'
+        - - 'WSO2APIMLoadBalancer'
           - !Ref Environment
       Scheme: internet-facing
       Subnets:
@@ -363,7 +360,9 @@ Resources:
         - Key: stickiness.enabled
           Value: 'true'
       UnhealthyThresholdCount: 3
-      VpcId: !Ref VPCID
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2VPC"
       Tags:
         - Key: Name
           Value: !Join
@@ -394,7 +393,9 @@ Resources:
         - Key: stickiness.enabled
           Value: 'true'
       UnhealthyThresholdCount: 3
-      VpcId: !Ref VPCID
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2VPC"
       Tags:
         - Key: Name
           Value: !Join
@@ -578,9 +579,6 @@ Parameters:
     MinLength: 1
   NetworkStackName:
     Description: Name of the stack with network resources exported
-    Type: String
-  VPCID:
-    Description: Virtual Private Cloud ID
     Type: String
   WSO2InstanceType:
     Type: String
