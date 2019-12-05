@@ -60,14 +60,14 @@ Metadata:
       Environment:
         default: Environment
 Resources:
-  MonitoringInstanceIAMRoleProd:
+  WSO2APIMMonitoringInstanceIAMRole:
     Type: AWS::IAM::Role
     Description: IAM Instance role to read AWS resource to discover instances to monitor
     Properties:
       RoleName: !Join
         - '-'
         - - !Ref 'AWS::Region'
-          - 'MonitoringInstanceIAMRoleProd'
+          - 'WSO2APIMMonitoringInstanceIAMRole'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -75,18 +75,18 @@ Resources:
               Service: [ec2.amazonaws.com]
             Action: sts:AssumeRole
       Path: /
-  MonitoringInstanceIAMProfileProd:
+  WSO2APIMMonitoringInstanceIAMProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
       Roles:
-        - Ref: MonitoringInstanceIAMRoleProd
-  MonitoringInstanceIAMPolicyProd:
+        - Ref: WSO2APIMMonitoringInstanceIAMRole
+  WSO2APIMMonitoringInstanceIAMPolicy:
     Type: AWS::IAM::Policy
-    DependsOn: MonitoringInstanceIAMRoleProd
+    DependsOn: WSO2APIMMonitoringInstanceIAMRole
     Description: Read AWS resources to discover instances to monitor
     Properties:
-      PolicyName: MonitoringInstanceReadPolicy
+      PolicyName: WSO2APIMMonitoringInstanceReadPolicy
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -96,7 +96,7 @@ Resources:
               - elasticloadbalancing:Describe*
               - ec2:Describe*
             Resource: "*"
-      Roles: [!Ref MonitoringInstanceIAMRoleProd]
+      Roles: [!Ref WSO2APIMMonitoringInstanceIAMRole]
   # networking configurations
   WSO2APIMVPC:
     Type: 'AWS::EC2::VPC'
@@ -260,7 +260,7 @@ Resources:
       SecurityGroups:
         - !Ref WSO2APIMEFSSecurityGroup
   # Product configurations
-  BastionSecurityGroupProd:
+  WSO2APIMBastionSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2APIMVPC
@@ -270,7 +270,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-  LoggingSecurityGroupProd:
+  WSO2APIMLoggingSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2APIMVPC
@@ -289,7 +289,7 @@ Resources:
           FromPort: 5044
           ToPort: 5044
           CidrIp: 0.0.0.0/0
-  MonitoringSecurityGroupProd:
+  WSO2APIMMonitoringSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2APIMVPC
@@ -304,7 +304,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           SourceSecurityGroupId: !Ref BastionSecurityGroupProd
-  WSO2APIMSecurityGroupProd:
+  WSO2APIMProductSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref WSO2APIMVPC
@@ -326,11 +326,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9100
           ToPort: 9100
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2APIMMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '2222'
           ToPort: '2222'
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2APIMMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '8280'
           ToPort: '8280'
@@ -346,7 +346,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '9443'
           ToPort: '9443'
-          SourceSecurityGroupId: !Ref MonitoringSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2APIMMonitoringSecurityGroupProd
         - IpProtocol: tcp
           FromPort: '8243'
           ToPort: '8243'
@@ -367,7 +367,7 @@ Resources:
           FromPort: '4000'
           ToPort: '4000'
           CidrIp: 0.0.0.0/0
-  WSO2BastionInstanceProd:
+  WSO2APIMBastionInstanceProd:
     Type: 'AWS::EC2::Instance'
     CreationPolicy:
       ResourceSignal:
@@ -382,7 +382,11 @@ Resources:
       Monitoring: 'false'
       Tags:
         - Key: Name
-          Value: WSO2BastionProdInstance
+          Value: !Join
+            - ''
+            - - 'WSO2APIMBastion'
+              - !Ref Environment
+              - 'Instance'
       NetworkInterfaces:
         - DeleteOnTermination: 'true'
           AssociatePublicIpAddress : 'true'
@@ -429,8 +433,8 @@ Resources:
           bash /usr/local/bin/bashScripts/MySQL/provision_db_scripts.sh 2>&1 | tee /home/wso2user/db_log.txt
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
-          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2BastionInstanceProd --region ${AWS::Region}
-  WSO2APIMNode1LaunchConfiguration:
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2APIMBastionInstanceProd --region ${AWS::Region}
+  WSO2APIMNodeLaunchConfigurationProd:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
       ImageId: !Ref AMIid
@@ -482,7 +486,7 @@ Resources:
           sed -i "s/RDS_DNS_NAME/${WSO2APIMDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${LoggingInstanceProd.PrivateIp}
+          export LogserverIP=${WSO2APIMLoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
           sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
@@ -509,7 +513,7 @@ Resources:
               sleep 10
               wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
               if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2APIMNode1AutoScalingGroup --region ${AWS::Region}
+                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2APIMNodeAutoScalingGroupProd --region ${AWS::Region}
                 break
               fi
           done
@@ -520,23 +524,27 @@ Resources:
       - WSO2APIMLoadBalancerProd
       - WSO2APIMVPCInternetGatewayAttachment
       - WSO2APIMDBInstance
-      - WSO2BastionInstanceProd
-      - LoggingInstanceProd
-  WSO2APIMNode1AutoScalingGroup:
+      - WSO2APIMBastionInstanceProd
+      - WSO2APIMLoggingInstanceProd
+  WSO2APIMNodeAutoScalingGroupProd:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
-      LaunchConfigurationName: !Ref WSO2APIMNode1LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
+      LaunchConfigurationName: !Ref WSO2APIMNodeLaunchConfigurationProd
+      DesiredCapacity: 2
+      MinSize: 2
       MaxSize: 2
       TargetGroupARNs:
-        - !Ref WSO2APIMALBTargetGroupProd
+        - !Ref WSO2APIMALB9443TargetGroupProd
         - !Ref WSO2APIMALB8243TargetGroupProd
       VPCZoneIdentifier:
         - !Ref WSO2APIMPrivateSubnet1
       Tags:
         - Key: Name
-          Value: WSO2APIMProdInstance01
+          Value: !Join
+            - ''
+            - - 'WSO2APIM'
+              - !Ref Environment
+              - 'Instance'
           PropagateAtLaunch: 'true'
         - Key: cluster
           Value: apim
@@ -549,138 +557,7 @@ Resources:
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
-        Count: 1
-        Timeout: PT30M
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MaxBatchSize: '2'
-        MinInstancesInService: '1'
-        PauseTime: PT30M
-        SuspendProcesses:
-          - AlarmNotification
-        WaitOnResourceSignals: true
-    DependsOn:
-      - WSO2APIMLoadBalancerProd
-  WSO2APIMNode2LaunchConfiguration:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    Properties:
-      ImageId: !Ref AMIid
-      InstanceType: !Ref WSO2InstanceType
-      InstanceMonitoring: 'false'
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: '20'
-            VolumeType: gp2
-            DeleteOnTermination: 'true'
-      KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref WSO2APIMSecurityGroupProd
-      UserData: !Base64
-        'Fn::Sub': |
-          Content-Type: multipart/mixed; boundary="//"
-          MIME-Version: 1.0
-
-          --//
-          Content-Type: text/cloud-config; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="cloud-config.txt"
-
-          #cloud-config
-          cloud_final_modules:
-          - [scripts-user, always]
-
-          --//
-          Content-Type: text/x-shellscript; charset="us-ascii"
-          MIME-Version: 1.0
-          Content-Transfer-Encoding: 7bit
-          Content-Disposition: attachment; filename="userdata.txt"
-
-          #!/bin/bash
-          export PATH=~/.local/bin:$PATH
-          apt-get update >> /home/wso2user/install.log
-          apt install -y nfs-common >> /home/wso2user/install.log
-          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-          wget --no-check-certificate --no-proxy 'http://wso2-cloudformation-templates.s3.amazonaws.com/private_ip_extractor.py' -P /usr/local/bin/
-          unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/carbon.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/deployment/server/jaggeryapps/store/site/conf/site.json
-          sed -i "s/ALB_DNS_NAME/${WSO2APIMLoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/repository/conf/api-manager.xml
-          sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          sed -i "s/RDS_DNS_NAME/${WSO2APIMDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/repository/conf/datasources/master-datasources.xml
-          tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
-          export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${LoggingInstanceProd.PrivateIp}
-          echo "$LogserverIP logserver" >> /etc/hosts
-          sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          sed -i "s/WSO2SecurityGroup/$SECURITYGROUP/g" /home/wso2user/${Product}-${Version}/repository/conf/axis2/axis2.xml
-          mkdir -p /mnt/efs
-          mount -t nfs4 -o nfsvers=4.1 ${WSO2APIMEFSFileSystemProd}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
-          sleep 450
-          if [ ! -d "/mnt/efs/server" ]; then
-              mkdir -p /mnt/efs/server
-              cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs
-          fi
-          rm -rf  /home/wso2user/${Product}-${Version}/repository/deployment/server
-          ln -s /mnt/efs/server /home/wso2user/${Product}-${Version}/repository/deployment/server
-          if [ ! -d "/mnt/efs/tenants" ]; then
-              mkdir -p /mnt/efs/tenants
-              cp -r /home/wso2user/${Product}-${Version}/repository/tenants /mnt/efs
-          fi
-          rm -rf /home/wso2user/${Product}-${Version}/repository/tenants
-          ln -s /mnt/efs/tenants /home/wso2user/${Product}-${Version}/repository/tenants
-          echo "${WSO2APIMEFSFileSystemProd}:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
-          /home/wso2user/${Product}-${Version}/bin/wso2server.sh start
-          sleep 30
-          end=$((SECONDS+1200))
-          while [ $SECONDS -lt $end ] ; do
-              sleep 10
-              wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
-              if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2APIMNode2AutoScalingGroup --region ${AWS::Region}
-                break
-              fi
-          done
-          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
-          cat /dev/null > ~/.bash_history && history -c
-    DependsOn:
-      - WSO2APIMSecurityGroupProd
-      - WSO2APIMLoadBalancerProd
-      - WSO2APIMVPCInternetGatewayAttachment
-      - WSO2APIMDBInstance
-      - WSO2BastionInstanceProd
-      - LoggingInstanceProd
-  WSO2APIMNode2AutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-    Properties:
-      LaunchConfigurationName: !Ref WSO2APIMNode2LaunchConfiguration
-      DesiredCapacity: 1
-      MinSize: 1
-      MaxSize: 2
-      TargetGroupARNs:
-        - !Ref WSO2APIMALBTargetGroupProd
-        - !Ref WSO2APIMALB8243TargetGroupProd
-      VPCZoneIdentifier:
-        - !Ref WSO2APIMPrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: WSO2APIMProdInstance02
-          PropagateAtLaunch: 'true'
-        - Key: cluster
-          Value: ei
-          PropagateAtLaunch: 'true'
-        - Key: Environment
-          Value: Prod
-          PropagateAtLaunch: 'true'
-        - Key: ServerType
-          Value: 'WSO2'
-          PropagateAtLaunch: 'true'
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
+        Count: 2
         Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -765,7 +642,7 @@ Resources:
         - !Ref WSO2APIMPublicSubnet2
       SecurityGroups:
         - !Ref WSO2APIMLoadBalancerSecurityGroupProd
-  WSO2APIMALBTargetGroupProd:
+  WSO2APIMALB9443TargetGroupProd:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
@@ -820,7 +697,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2APIMALBTargetGroupProd
+          TargetGroupArn: !Ref WSO2APIMALB9443TargetGroupProd
       Certificates:
         - CertificateArn: !Join
             - ''
