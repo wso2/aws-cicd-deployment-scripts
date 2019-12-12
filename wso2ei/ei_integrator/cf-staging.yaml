@@ -148,6 +148,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
           export PATH=~/.local/bin:$PATH
           apt-get update
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
@@ -204,6 +205,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
           export PATH=~/.local/bin:$PATH
           apt-get update >> /home/wso2user/install.log
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
