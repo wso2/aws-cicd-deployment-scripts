@@ -195,6 +195,29 @@ Resources:
     Type: 'AWS::EC2::EIP'
     Properties:
       Domain: vpc
+  # EFS configurations
+  WSO2EIEFSFileSystem:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      PerformanceMode: generalPurpose
+  WSO2EIPrivateSubnet1EFSMountTarget:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      Fn::ImportValue:
+        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
+      FileSystemId: !Ref WSO2EIEFSFileSystem
+      SecurityGroups:
+        - Fn::ImportValue:
+            Fn::Sub: "${NetworkStackName}-WSO2EFSSecurityGroup"
+  WSO2EIPrivateSubnet2EFSMountTarget:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      Fn::ImportValue:
+        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet2"
+      FileSystemId: !Ref WSO2EIEFSFileSystem
+      SecurityGroups:
+        - Fn::ImportValue:
+            Fn::Sub: "${NetworkStackName}-WSO2EFSSecurityGroup"
   # database configurations
   WSO2EIDBInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -466,6 +489,22 @@ Resources:
           export LogserverIP=${WSO2EILoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
+          mkdir -p /mnt/efs
+          mount -t nfs4 -o nfsvers=4.1 ${WSO2EIEFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
+          sleep 100
+          if [ ! -d "/mnt/efs/deployment/server" ]; then
+              mkdir -p /mnt/efs/deployment/server
+              cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs/deployment
+          fi
+          rm -rf /home/wso2user/${Product}-${Version}/repository/deployment/server
+          ln -s /mnt/efs/deployment/server /home/wso2user/${Product}-${Version}/repository/deployment/server
+          if [ ! -d "/mnt/efs/tenants" ]; then
+              mkdir -p /mnt/efs/tenants
+              cp -r /home/wso2user/${Product}-${Version}/repository/tenants /mnt/efs
+          fi
+          rm -rf /home/wso2user/${Product}-${Version}/repository/tenants
+          ln -s /mnt/efs/tenants /home/wso2user/${Product}-${Version}/repository/tenants
+          echo "${WSO2EIEFSFileSystem}:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
           /home/wso2user/${Product}-${Version}/bin/integrator.sh start
           sleep 30
           end=$((SECONDS+1200))
