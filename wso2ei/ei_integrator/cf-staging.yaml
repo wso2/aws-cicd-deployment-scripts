@@ -72,7 +72,7 @@ Resources:
     Properties:
       SubnetId:
         Fn::ImportValue:
-        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
+          Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
       FileSystemId: !Ref WSO2EIEFSFileSystem
       SecurityGroups:
         - Fn::ImportValue:
