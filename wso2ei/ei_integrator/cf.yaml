@@ -196,6 +196,16 @@ Resources:
     Properties:
       Domain: vpc
   # EFS configurations
+  WSO2EIEFSSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref WSO2EIVPC
+      GroupDescription: WSO2 EFS Security Group
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '2049'
+        ToPort: '2049'
+        CidrIp: 0.0.0.0/0
   WSO2EIEFSFileSystem:
     Type: 'AWS::EFS::FileSystem'
     Properties:
@@ -203,21 +213,17 @@ Resources:
   WSO2EIPrivateSubnet1EFSMountTarget:
     Type: 'AWS::EFS::MountTarget'
     Properties:
-      Fn::ImportValue:
-        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
+      SubnetId: !Ref WSO2EIPrivateSubnet1
       FileSystemId: !Ref WSO2EIEFSFileSystem
       SecurityGroups:
-        - Fn::ImportValue:
-            Fn::Sub: "${NetworkStackName}-WSO2EFSSecurityGroup"
+        - !Ref WSO2EIEFSSecurityGroup
   WSO2EIPrivateSubnet2EFSMountTarget:
     Type: 'AWS::EFS::MountTarget'
     Properties:
-      Fn::ImportValue:
-        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet2"
+      SubnetId: !Ref WSO2EIPrivateSubnet2
       FileSystemId: !Ref WSO2EIEFSFileSystem
       SecurityGroups:
-        - Fn::ImportValue:
-            Fn::Sub: "${NetworkStackName}-WSO2EFSSecurityGroup"
+        - !Ref WSO2EIEFSSecurityGroup
   # database configurations
   WSO2EIDBInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
