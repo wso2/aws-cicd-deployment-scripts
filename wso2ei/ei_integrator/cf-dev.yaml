@@ -71,7 +71,7 @@ Resources:
     Type: 'AWS::EFS::MountTarget'
     Properties:
       SubnetId:
-      Fn::ImportValue:
+        Fn::ImportValue:
         Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
       FileSystemId: !Ref WSO2EIEFSFileSystem
       SecurityGroups:
