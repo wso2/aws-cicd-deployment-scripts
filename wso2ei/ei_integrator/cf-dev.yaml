@@ -70,6 +70,7 @@ Resources:
   WSO2EIPrivateSubnet1EFSMountTarget:
     Type: 'AWS::EFS::MountTarget'
     Properties:
+      SubnetId:
       Fn::ImportValue:
         Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet1"
       FileSystemId: !Ref WSO2EIEFSFileSystem
@@ -79,8 +80,9 @@ Resources:
   WSO2EIPrivateSubnet2EFSMountTarget:
     Type: 'AWS::EFS::MountTarget'
     Properties:
-      Fn::ImportValue:
-        Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet2"
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Sub: "${NetworkStackName}-WSO2PrivateSubnet2"
       FileSystemId: !Ref WSO2EIEFSFileSystem
       SecurityGroups:
         - Fn::ImportValue:
