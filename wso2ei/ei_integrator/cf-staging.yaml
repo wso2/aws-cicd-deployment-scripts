@@ -565,6 +565,12 @@ Outputs:
           - WSO2EILoggingInstance
           - PublicDnsName
         - ':5601'
+  MountTargetIP:
+    Value: !Join
+      - ''
+      - - !GetAtt
+        - WSO2EIPrivateSubnet1EFSMountTarget
+        - IpAddress
     Description: Log Dashboard URL (Kibana Dashboard)
 Parameters:
   IAMRole:
