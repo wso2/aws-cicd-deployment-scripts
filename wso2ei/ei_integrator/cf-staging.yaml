@@ -99,7 +99,7 @@ Resources:
       BackupRetentionPeriod: '0'
       DBInstanceIdentifier: !Join
         - ''
-        - - 'WSO2APIMDB'
+        - - 'WSO2EIDB'
           - !Ref Environment
           - 'Instance'
       DBName: WSO2_EI_DB
