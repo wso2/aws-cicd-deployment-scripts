@@ -134,11 +134,12 @@ Resources:
           Value: WSO2 Transit Gateway
       TransitGatewayId: !Ref TransitGatewayId
       VpcId: !Ref WSO2VPC
-  Type: 'AWS::EC2::Route'
-   Properties:
-     RouteTableId: !Ref WSO2PrivateSubnetRouteTable
-     TransitGatewayId: !Ref TransitGatewayId
-     DestinationCidrBlock: 10.0.0.0/16
+  WSO2TransitGatewayRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref WSO2PrivateSubnetRouteTable
+      TransitGatewayId: !Ref TransitGatewayId
+      DestinationCidrBlock: 10.0.0.0/16
   WSO2DBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
