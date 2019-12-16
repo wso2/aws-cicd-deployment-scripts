@@ -932,11 +932,7 @@ Outputs:
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
   MountTargetIP:
-    Value: !Join
-      - ''
-      - - !GetAtt
-        - WSO2EIPrivateSubnet1EFSMountTarget
-        - IpAddress
+    Value: !GetAtt WSO2EIPrivateSubnet1EFSMountTarget.IpAddress
 Parameters:
   IAMRole:
     Type: String
