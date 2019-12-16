@@ -13,8 +13,7 @@
 # limitations under the License.
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  WSO2 Enterprise Integrator Clustered deployment in Production with High Availability
+Description: WSO2 Enterprise Integrator Clustered deployment in Production with High Availability
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -38,6 +37,10 @@ Metadata:
           default: Environment Configurations
           Parameters:
             - Environment
+      - Label:
+          default: WSO2 Transit Gateway
+        Parameters:
+          - TransitGatewayId
     ParameterLabels:
       IAMRole:
         default: AWS IAM Role
@@ -59,6 +62,8 @@ Metadata:
         default: Version
       Environment:
         default: Environment
+      TransitGatewayId:
+        default: Transit Gateway Id
 Resources:
   WSO2EIMonitoringInstanceIAMRole:
     Type: AWS::IAM::Role
@@ -195,6 +200,17 @@ Resources:
     Type: 'AWS::EC2::EIP'
     Properties:
       Domain: vpc
+  WSO2EIProdTransitGatewayAttachment:
+    Type: "AWS::EC2::TransitGatewayAttachment"
+    Properties:
+      SubnetIds:
+        - !Ref WSO2EIPrivateSubnet1
+        - !Ref WSO2EIPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: WSO2 Transit Gateway
+      TransitGatewayId: !Ref TransitGatewayId
+      VpcId: !Ref WSO2EIVPC
   # EFS configurations
   WSO2EIEFSSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -915,6 +931,12 @@ Outputs:
           - PublicDnsName
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
+  MountTargetIP:
+    Value: !Join
+      - ''
+      - - !GetAtt
+        - WSO2EIPrivateSubnet1EFSMountTarget
+        - IpAddress
 Parameters:
   IAMRole:
     Type: String
@@ -960,6 +982,8 @@ Parameters:
   Version:
     Type: String
   Environment:
+    Type: String
+  TransitGatewayId:
     Type: String
 Mappings:
   WSO2MonitorMasterAMIRegionMap:
