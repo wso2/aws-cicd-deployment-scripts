@@ -13,8 +13,7 @@
 # limitations under the License.
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  WSO2 API Manager Clustered deployment in Production with High Availability
+Description: WSO2 API Manager Clustered deployment in Production with High Availability
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -38,6 +37,10 @@ Metadata:
           default: Environment Configurations
           Parameters:
             - Environment
+      - Label:
+          default: WSO2 Transit Gateway
+        Parameters:
+          - TransitGatewayId
     ParameterLabels:
       IAMRole:
         default: AWS IAM Role
@@ -59,6 +62,8 @@ Metadata:
         default: Version
       Environment:
         default: Environment
+      TransitGatewayId:
+        default: Transit Gateway Id
 Resources:
   WSO2APIMMonitoringInstanceIAMRole:
     Type: AWS::IAM::Role
@@ -101,14 +106,14 @@ Resources:
   WSO2APIMVPC:
     Type: 'AWS::EC2::VPC'
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: 10.1.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
   WSO2APIMPublicSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2APIMVPC
-      CidrBlock: 10.0.254.0/24
+      CidrBlock: 10.1.254.0/24
       AvailabilityZone: !Select
         - '0'
         - !GetAZs ''
@@ -116,7 +121,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2APIMVPC
-      CidrBlock: 10.0.252.0/24
+      CidrBlock: 10.1.252.0/24
       AvailabilityZone: !Select
         - '1'
         - !GetAZs ''
@@ -152,7 +157,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2APIMVPC
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: 10.1.1.0/24
       AvailabilityZone: !Select
         - '0'
         - !GetAZs ''
@@ -160,7 +165,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2APIMVPC
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: 10.1.2.0/24
       AvailabilityZone: !Select
         - '1'
         - !GetAZs ''
@@ -195,6 +200,17 @@ Resources:
     Type: 'AWS::EC2::EIP'
     Properties:
       Domain: vpc
+  WSO2ProdTransitGatewayAttachment:
+    Type: "AWS::EC2::TransitGatewayAttachment"
+    Properties:
+      SubnetIds:
+        - !Ref WSO2APIMPrivateSubnet1
+        - !Ref WSO2APIMPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: WSO2 Transit Gateway
+      TransitGatewayId: !Ref TransitGatewayId
+      VpcId: !Ref WSO2APIMVPC
   # database configurations
   WSO2APIMDBInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -915,6 +931,12 @@ Outputs:
           - PublicDnsName
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
+  MountTargetIP:
+    Value: !Join
+      - ''
+      - - !GetAtt
+        - WSO2APIMPrivateSubnet1EFSMountTarget
+        - IpAddress
 Parameters:
   IAMRole:
     Type: String
@@ -960,6 +982,8 @@ Parameters:
   Version:
     Type: String
   Environment:
+    Type: String
+  TransitGatewayId:
     Type: String
 Mappings:
   WSO2MonitorMasterAMIRegionMap:
