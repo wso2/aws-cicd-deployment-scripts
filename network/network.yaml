@@ -27,7 +27,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.254.0/24
+      CidrBlock: 10.1.254.0/24
       AvailabilityZone: !Select
         - '0'
         - !GetAZs ''
@@ -35,7 +35,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.252.0/24
+      CidrBlock: 10.1.252.0/24
       AvailabilityZone: !Select
         - '1'
         - !GetAZs ''
@@ -71,7 +71,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: 10.1.1.0/24
       AvailabilityZone: !Select
         - '0'
         - !GetAZs ''
@@ -79,7 +79,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WSO2VPC
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: 10.1.2.0/24
       AvailabilityZone: !Select
         - '1'
         - !GetAZs ''
