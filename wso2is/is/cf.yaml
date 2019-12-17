@@ -86,10 +86,10 @@ Resources:
     Properties:
       Path: "/"
       Roles:
-        - Ref: MonitoringInstanceIAMRole
+        - Ref: WSO2ISMonitoringInstanceIAMRole
   WSO2ISMonitoringInstanceIAMPolicy:
     Type: AWS::IAM::Policy
-    DependsOn: MonitoringInstanceIAMRole
+    DependsOn: WSO2ISMonitoringInstanceIAMRole
     Description: Read AWS resources to discover instances to monitor
     Properties:
       PolicyName: WSO2ISMonitoringInstanceReadPolicy
@@ -261,7 +261,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2ISBastionSecurityGroupProd
         - IpProtocol: tcp
           FromPort: 5044
           ToPort: 5044
@@ -280,7 +280,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2ISBastionSecurityGroupProd
   WSO2ISProductSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -375,7 +375,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2ISPublicSubnet1
           GroupSet:
-            - !Ref BastionSecurityGroupProd
+            - !Ref WSO2ISBastionSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -421,7 +421,7 @@ Resources:
     Properties:
       ImageId: !Ref AMIid
       InstanceType: !Ref WSO2InstanceType
-      IamInstanceProfile: !Ref IAMProfile
+      IamInstanceProfile: !Ref IAMRole
       InstanceMonitoring: 'false'
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
@@ -431,7 +431,7 @@ Resources:
             DeleteOnTermination: 'true'
       KeyName: !Ref KeyPairName
       SecurityGroups:
-        - !Ref WSO2ISSecurityGroupProd
+        - !Ref WSO2ISProductSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -484,7 +484,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2ISSecurityGroupProd
+      - WSO2ISProductSecurityGroupProd
       - WSO2ISLoadBalancerProd
       - WSO2ISVPCInternetGatewayAttachment
       - WSO2ISDBInstance
@@ -695,7 +695,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2ISSALB8280TargetGroupProd
+          TargetGroupArn: !Ref WSO2ISALB8280TargetGroupProd
       LoadBalancerArn: !Ref WSO2ISLoadBalancerProd
       Port: 8280
       Protocol: HTTP
@@ -749,7 +749,7 @@ Resources:
         - !Ref 'AWS::Region'
         - Ubuntu1804
       InstanceType: t2.large
-      IamInstanceProfile: !Ref WSO2ISMonitoringInstanceIAMProfileProd
+      IamInstanceProfile: !Ref WSO2ISMonitoringInstanceIAMProfile
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
@@ -768,7 +768,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2ISPublicSubnet1
           GroupSet:
-            - !Ref MonitoringSecurityGroupProd
+            - !Ref WSO2ISMonitoringSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           #!/bin/bash
@@ -780,7 +780,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2ISSecurityGroupProd
+      - WSO2ISProductSecurityGroupProd
       - WSO2ISLoadBalancerProd
       - WSO2ISVPCInternetGatewayAttachment
       - WSO2ISDBInstance
@@ -812,7 +812,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2ISPublicSubnet1
           GroupSet:
-            - !Ref LoggingSecurityGroupProd
+            - !Ref WSO2ISLoggingSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           #cloud-config
@@ -823,7 +823,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2ISSecurityGroupProd
+      - WSO2ISProductSecurityGroupProd
       - WSO2ISLoadBalancerProd
       - WSO2ISVPCInternetGatewayAttachment
       - WSO2ISDBInstance
