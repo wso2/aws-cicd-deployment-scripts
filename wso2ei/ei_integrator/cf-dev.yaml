@@ -235,8 +235,6 @@ Resources:
           apt install -y nfs-common >> /home/wso2user/install.log
           pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
-          cp /home/wso2user/endpointCars/*_common*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
-          cp /home/wso2user/endpointCars/*_dev*.car /home/wso2user/${Product}-${Version}/repository/deployment/server/carbonapps
           sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
