@@ -300,7 +300,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2APIMBastionSecurityGroupProd
         - IpProtocol: tcp
           FromPort: 5044
           ToPort: 5044
@@ -319,7 +319,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroupProd
+          SourceSecurityGroupId: !Ref WSO2APIMBastionSecurityGroupProd
   WSO2APIMProductSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -410,7 +410,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2APIMPublicSubnet1
           GroupSet:
-            - !Ref BastionSecurityGroupProd
+            - !Ref WSO2APIMBastionSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -465,7 +465,7 @@ Resources:
             DeleteOnTermination: 'true'
       KeyName: !Ref KeyPairName
       SecurityGroups:
-        - !Ref WSO2APIMSecurityGroupProd
+        - !Ref WSO2APIMProductSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -538,7 +538,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2APIMSecurityGroupProd
+      - WSO2APIMProductSecurityGroupProd
       - WSO2APIMLoadBalancerProd
       - WSO2APIMVPCInternetGatewayAttachment
       - WSO2APIMDBInstance
@@ -755,7 +755,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref WSO2APIMALBTargetGroupProd
+          TargetGroupArn: !Ref WSO2APIMALB9443TargetGroupProd
       Certificates:
         - CertificateArn: !Join
             - ''
@@ -780,7 +780,7 @@ Resources:
         - !Ref 'AWS::Region'
         - Ubuntu1804
       InstanceType: t2.large
-      IamInstanceProfile: !Ref MonitoringInstanceIAMProfileProd
+      IamInstanceProfile: !Ref WSO2APIMMonitoringInstanceIAMProfile
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
@@ -799,7 +799,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2APIMPublicSubnet1
           GroupSet:
-            - !Ref MonitoringSecurityGroupProd
+            - !Ref WSO2APIMMonitoringSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           #!/bin/bash
@@ -811,11 +811,11 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2APIMSecurityGroupProd
+      - WSO2APIMProductSecurityGroupProd
       - WSO2APIMLoadBalancerProd
       - WSO2APIMVPCInternetGatewayAttachment
       - WSO2APIMDBInstance
-  LoggingInstanceProd:
+  WSO2APIMLoggingInstanceProd:
     Type: 'AWS::EC2::Instance'
     Properties:
       DisableApiTermination: 'false'
@@ -843,7 +843,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref WSO2APIMPublicSubnet1
           GroupSet:
-            - !Ref LoggingSecurityGroupProd
+            - !Ref WSO2APIMLoggingSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           #cloud-config
@@ -854,7 +854,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2APIMSecurityGroupProd
+      - WSO2APIMProductSecurityGroupProd
       - WSO2APIMLoadBalancerProd
       - WSO2APIMVPCInternetGatewayAttachment
       - WSO2APIMDBInstance
@@ -927,12 +927,12 @@ Outputs:
       - ''
       - - 'http://'
         - !GetAtt
-          - LoggingInstanceProd
+          - WSO2APIMLoggingInstanceProd
           - PublicDnsName
         - ':5601'
     Description: Log Dashboard URL (Kibana Dashboard)
   MountTargetIP:
-    Value: !GetAtt WSO2EIPrivateSubnet1EFSMountTarget.IpAddress
+    Value: !GetAtt WSO2APIMPrivateSubnet1EFSMountTarget.IpAddress
 Parameters:
   IAMRole:
     Type: String
