@@ -140,6 +140,7 @@ Resources:
       RouteTableId: !Ref WSO2PrivateSubnetRouteTable
       TransitGatewayId: !Ref TransitGatewayId
       DestinationCidrBlock: 10.0.0.0/16
+    DependsOn: WSO2TransitGatewayAttachment
   WSO2DBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
