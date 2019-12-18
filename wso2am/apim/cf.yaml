@@ -200,7 +200,7 @@ Resources:
     Type: 'AWS::EC2::EIP'
     Properties:
       Domain: vpc
-  WSO2ProdTransitGatewayAttachment:
+  WSO2APIMProdTransitGatewayAttachment:
     Type: "AWS::EC2::TransitGatewayAttachment"
     Properties:
       SubnetIds:
@@ -211,6 +211,13 @@ Resources:
           Value: WSO2 Transit Gateway
       TransitGatewayId: !Ref TransitGatewayId
       VpcId: !Ref WSO2APIMVPC
+  WSO2APIMProdTransitGatewayRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref WSO2APIMPrivateSubnetRouteTable
+      TransitGatewayId: !Ref TransitGatewayId
+      DestinationCidrBlock: 10.0.0.0/16
+    DependsOn: WSO2APIMProdTransitGatewayAttachment
   # database configurations
   WSO2APIMDBInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
