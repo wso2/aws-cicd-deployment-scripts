@@ -680,7 +680,7 @@ Resources:
       - WSO2EIDBInstance
       - WSO2EIBastionInstance
       - WSO2EILoggingInstance
-    WSO2EINode2AutoScalingGroup:
+  WSO2EINode2AutoScalingGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
       Properties:
         LaunchConfigurationName: !Ref WSO2EINode2LaunchConfiguration
