@@ -455,7 +455,7 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
           /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EIBastionInstanceProd --region ${AWS::Region}
-  WSO2EINodeLaunchConfiguration:
+  WSO2EINode1LaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
       ImageId: !Ref AMIid
@@ -512,7 +512,7 @@ Resources:
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           mkdir -p /mnt/efs
           mount -t nfs4 -o nfsvers=4.1 ${WSO2EIEFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
-          sleep 100
+          sleep 180
           if [ ! -d "/mnt/efs/deployment/server" ]; then
               mkdir -p /mnt/efs/deployment/server
               cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs/deployment
@@ -533,7 +533,7 @@ Resources:
               sleep 10
               wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
               if [ $? -eq "0" ] ; then
-                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINodeAutoScalingGroup --region ${AWS::Region}
+                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINode1AutoScalingGroup --region ${AWS::Region}
                 break
               fi
           done
@@ -546,12 +546,12 @@ Resources:
       - WSO2EIDBInstance
       - WSO2EIBastionInstanceProd
       - WSO2EILoggingInstanceProd
-  WSO2EINodeAutoScalingGroup:
+  WSO2EINode1AutoScalingGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
-      LaunchConfigurationName: !Ref WSO2EINodeLaunchConfiguration
-      DesiredCapacity: 2
-      MinSize: 2
+      LaunchConfigurationName: !Ref WSO2EINode1LaunchConfiguration
+      DesiredCapacity: 1
+      MinSize: 1
       MaxSize: 2
       TargetGroupARNs:
         - !Ref WSO2EIALB9443TargetGroupProd
@@ -578,7 +578,7 @@ Resources:
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
-        Count: 2
+        Count: 1
         Timeout: PT30M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -590,6 +590,135 @@ Resources:
         WaitOnResourceSignals: true
     DependsOn:
       - WSO2EILoadBalancerProd
+  WSO2EINode2LaunchConfiguration:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      ImageId: !Ref AMIid
+      InstanceType: !Ref WSO2InstanceType
+      IamInstanceProfile: !Ref IAMRole
+      InstanceMonitoring: 'false'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: '20'
+            VolumeType: gp2
+            DeleteOnTermination: 'true'
+      KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-WSO2ProductSecurityGroup"
+      UserData: !Base64
+        'Fn::Sub': |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+
+          #!/bin/bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          export PATH=~/.local/bin:$PATH
+          apt-get update >> /home/wso2user/install.log
+          apt install -y nfs-common >> /home/wso2user/install.log
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
+          sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
+          sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
+          sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
+          sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
+          sed -i "s/RDS_DNS_NAME/${WSO2EIDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
+          tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
+          export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
+          export LogserverIP=${WSO2EILoggingInstance.PrivateIp}
+          echo "$LogserverIP logserver" >> /etc/hosts
+          sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
+          mkdir -p /mnt/efs
+          mount -t nfs4 -o nfsvers=4.1 ${WSO2EIEFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
+          sleep 300
+          if [ ! -d "/mnt/efs/deployment/server" ]; then
+              mkdir -p /mnt/efs/deployment/server
+              cp -r /home/wso2user/${Product}-${Version}/repository/deployment/server /mnt/efs/deployment
+          fi
+          rm -rf /home/wso2user/${Product}-${Version}/repository/deployment/server
+          ln -s /mnt/efs/deployment/server /home/wso2user/${Product}-${Version}/repository/deployment/server
+          if [ ! -d "/mnt/efs/tenants" ]; then
+              mkdir -p /mnt/efs/tenants
+              cp -r /home/wso2user/${Product}-${Version}/repository/tenants /mnt/efs
+          fi
+          rm -rf /home/wso2user/${Product}-${Version}/repository/tenants
+          ln -s /mnt/efs/tenants /home/wso2user/${Product}-${Version}/repository/tenants
+          echo "${WSO2EIEFSFileSystem}:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
+          /home/wso2user/${Product}-${Version}/bin/integrator.sh start
+          sleep 30
+          end=$((SECONDS+1200))
+          while [ $SECONDS -lt $end ] ; do
+              sleep 10
+              wget --delete-after --server-response --no-check-certificate "https://localhost:9443/carbon/admin/login.jsp"
+              if [ $? -eq "0" ] ; then
+                /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WSO2EINode2AutoScalingGroup --region ${AWS::Region}
+                break
+              fi
+          done
+          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
+          cat /dev/null > ~/.bash_history && history -c
+    DependsOn:
+      - WSO2EILoadBalancer
+      - WSO2EIDBInstance
+      - WSO2EIBastionInstance
+      - WSO2EILoggingInstance
+    WSO2EINode2AutoScalingGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      Properties:
+        LaunchConfigurationName: !Ref WSO2EINode2LaunchConfiguration
+        DesiredCapacity: 1
+        MinSize: 1
+        MaxSize: 2
+        TargetGroupARNs:
+          - !Ref WSO2EIALB9443TargetGroup
+          - !Ref WSO2EIALB8243TargetGroup
+          - !Ref WSO2EIALB8280TargetGroup
+        VPCZoneIdentifier:
+          - Fn::ImportValue:
+              !Sub "${NetworkStackName}-WSO2PrivateSubnet2"
+        Tags:
+          - Key: Name
+            Value: !Join
+              - ''
+              - - 'WSO2EI'
+                - !Ref Environment
+                - 'Instance02'
+            PropagateAtLaunch: 'true'
+          - Key: cluster
+            Value: ei
+            PropagateAtLaunch: 'true'
+      CreationPolicy:
+        ResourceSignal:
+          Count: 1
+          Timeout: PT30M
+      UpdatePolicy:
+        AutoScalingRollingUpdate:
+          MaxBatchSize: '2'
+          MinInstancesInService: '1'
+          PauseTime: PT20M
+          SuspendProcesses:
+            - AlarmNotification
+          WaitOnResourceSignals: true
+      DependsOn:
+        - WSO2EILoadBalancer
   WSO2EILoadBalancerSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
