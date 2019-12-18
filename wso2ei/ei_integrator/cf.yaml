@@ -211,6 +211,13 @@ Resources:
           Value: WSO2 Transit Gateway
       TransitGatewayId: !Ref TransitGatewayId
       VpcId: !Ref WSO2EIVPC
+  WSO2EIProdTransitGatewayRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref WSO2EIPrivateSubnetRouteTable
+      TransitGatewayId: !Ref TransitGatewayId
+      DestinationCidrBlock: 10.0.0.0/16
+    DependsOn: WSO2EIProdTransitGatewayAttachment
   # EFS configurations
   WSO2EIEFSSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
