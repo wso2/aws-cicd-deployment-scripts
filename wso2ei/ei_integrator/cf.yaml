@@ -612,8 +612,7 @@ Resources:
             DeleteOnTermination: 'true'
       KeyName: !Ref KeyPairName
       SecurityGroups:
-        - Fn::ImportValue:
-            !Sub "${NetworkStackName}-WSO2ProductSecurityGroup"
+        - !Ref WSO2EIProductSecurityGroupProd
       UserData: !Base64
         'Fn::Sub': |
           Content-Type: multipart/mixed; boundary="//"
@@ -699,8 +698,7 @@ Resources:
           - !Ref WSO2EIALB8243TargetGroup
           - !Ref WSO2EIALB8280TargetGroup
         VPCZoneIdentifier:
-          - Fn::ImportValue:
-              !Sub "${NetworkStackName}-WSO2PrivateSubnet2"
+          - !Ref WSO2EIPrivateSubnet1
         Tags:
           - Key: Name
             Value: !Join
