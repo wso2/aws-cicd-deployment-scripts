@@ -643,13 +643,13 @@ Resources:
           unzip /home/wso2user/${Product}-${Version}.zip -d /home/wso2user/
           sed -i "s/IAM_ROLE/${IAMRole}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           sed -i "s/REGION_NAME/${AWS::Region}/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
-          sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancer.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
+          sed -i "s/ALB_DNS_NAME/${WSO2EILoadBalancerProd.DNSName}/g" /home/wso2user/${Product}-${Version}/conf/carbon.xml
           sed -i "s/CF_DB_USERNAME/${DBUsername}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           sed -i "s/CF_DB_PASSWORD/${DBPassword}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           sed -i "s/RDS_DNS_NAME/${WSO2EIDBInstance.Endpoint.Address}/g" /home/wso2user/${Product}-${Version}/conf/datasources/master-datasources.xml
           tar -xvf /opt/OpenJDK8U-jdk_8u222_linux_x64.tar.gz -C /opt/
           export PRIVATE_IP=$(ifconfig | grep -m 1 'inet ' | awk '{print $2}')
-          export LogserverIP=${WSO2EILoggingInstance.PrivateIp}
+          export LogserverIP=${WSO2EILoggingInstanceProd.PrivateIp}
           echo "$LogserverIP logserver" >> /etc/hosts
           sed -i "s/LOCAL-MEMBER-HOST/$PRIVATE_IP/g" /home/wso2user/${Product}-${Version}/conf/axis2/axis2.xml
           mkdir -p /mnt/efs
@@ -682,10 +682,12 @@ Resources:
           echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
           cat /dev/null > ~/.bash_history && history -c
     DependsOn:
-      - WSO2EILoadBalancer
+      - WSO2EIProductSecurityGroupProd
+      - WSO2EILoadBalancerProd
+      - WSO2EIVPCInternetGatewayAttachment
       - WSO2EIDBInstance
-      - WSO2EIBastionInstance
-      - WSO2EILoggingInstance
+      - WSO2EIBastionInstanceProd
+      - WSO2EILoggingInstanceProd
   WSO2EINode2AutoScalingGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
       Properties:
@@ -694,9 +696,9 @@ Resources:
         MinSize: 1
         MaxSize: 2
         TargetGroupARNs:
-          - !Ref WSO2EIALB9443TargetGroup
-          - !Ref WSO2EIALB8243TargetGroup
-          - !Ref WSO2EIALB8280TargetGroup
+          - !Ref WSO2EIALB9443TargetGroupProd
+          - !Ref WSO2EIALB8243TargetGroupProd
+          - !Ref WSO2EIALB8280TargetGroupProd
         VPCZoneIdentifier:
           - !Ref WSO2EIPrivateSubnet1
         Tags:
@@ -707,9 +709,15 @@ Resources:
                 - !Ref Environment
                 - 'Instance02'
             PropagateAtLaunch: 'true'
-          - Key: cluster
-            Value: ei
-            PropagateAtLaunch: 'true'
+        - Key: cluster
+          Value: ei
+          PropagateAtLaunch: 'true'
+        - Key: Environment
+          Value: Prod
+          PropagateAtLaunch: 'true'
+        - Key: ServerType
+          Value: 'WSO2'
+          PropagateAtLaunch: 'true'
       CreationPolicy:
         ResourceSignal:
           Count: 1
@@ -723,7 +731,7 @@ Resources:
             - AlarmNotification
           WaitOnResourceSignals: true
       DependsOn:
-        - WSO2EILoadBalancer
+        - WSO2EILoadBalancerProd
   WSO2EILoadBalancerSecurityGroupProd:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
