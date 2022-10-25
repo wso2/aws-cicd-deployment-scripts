@@ -1,4 +1,8 @@
 # AWS Resources for CICD Pipeline
+> **Warning**
+>
+>   The CICD pipeline is deprecated.
+>
 
 This repository contains CloudFormation templates for CICD pipeline to deploy WSO2 products in Amazon Web Services(AWS).
 
